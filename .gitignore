@@ -1,0 +1,10 @@
+# Local Supabase credentials — never commit
+js/config.local.js
+
+# Dependencies
+node_modules/
+
+# OS noise
+.DS_Store
+Thumbs.db
+.aider*

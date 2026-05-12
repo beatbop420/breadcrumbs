@@ -1,0 +1,17 @@
+{
+  "name": "breadcrumbs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/run-tests.js",
+    "check:syntax": "node scripts/check-syntax.js",
+    "lint": "eslint \"js/**/*.js\" \"scripts/**/*.js\" sw.js",
+    "security:check": "node scripts/security-check.js",
+    "audit:deps": "npm audit --audit-level=high"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.27.0",
+    "eslint": "9.27.0",
+    "globals": "15.15.0"
+  }
+}

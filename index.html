@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#8A7560" />
+  <meta name="description" content="A map of shared memories." />
+  <title>Breadcrumbs</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- SPLASH -->
+  <div id="splash" class="overlay">
+    <div class="splash__inner">
+      <h1 class="splash__title">Breadcrumbs</h1>
+      <p class="splash__message">Remember that one time...</p>
+      <button id="splash-start" class="btn btn--primary">Start Exploring</button>
+    </div>
+  </div>
+
+  <!-- USERNAME PROMPT -->
+  <div id="username-prompt" class="overlay hidden">
+    <div class="modal modal--centered">
+      <h2 class="modal__title">What's your name?</h2>
+      <p id="username-prompt-subtitle" class="modal__subtitle">Use the same unique name on any device.</p>
+      <form id="username-form" novalidate>
+        <input
+          id="username-input"
+          class="input"
+          type="text"
+          placeholder="Your name"
+          maxlength="100"
+          autocomplete="name"
+          required
+        />
+        <p id="username-error" class="error-text"></p>
+        <button type="submit" class="btn btn--primary btn--full">Continue</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- ADD PIN MODAL -->
+  <div id="modal-add" class="modal-backdrop hidden">
+    <div class="modal modal--bottom">
+      <div class="modal__header">
+        <h2 class="modal__title">Add a Memory</h2>
+        <button id="add-close" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <form id="add-pin-form" novalidate>
+        <input type="hidden" id="add-lat" />
+        <input type="hidden" id="add-lng" />
+
+        <label class="label" for="add-place-name">Place Name <span class="required">*</span></label>
+        <input id="add-place-name" class="input" type="text" placeholder="e.g. Paris, France" maxlength="200" required />
+        <span id="place-name-counter" class="char-counter">0/200</span>
+
+        <label class="label" for="add-note">Memory</label>
+        <textarea id="add-note" class="input input--textarea" placeholder="What happened here?" maxlength="1000" rows="4"></textarea>
+        <span id="note-counter" class="char-counter">0/1000</span>
+
+        <label class="label" for="add-submitted-by">Your Name</label>
+        <input id="add-submitted-by" class="input" type="text" placeholder="Your name" maxlength="100" />
+
+        <label class="label" for="add-photo">Photo</label>
+        <label id="add-photo-trigger" class="upload-btn" for="add-photo">
+          <span id="add-photo-label">Choose a photo</span>
+          <input id="add-photo" type="file" accept="image/jpeg,image/png,image/webp" class="upload-input" />
+        </label>
+        <p id="add-photo-status" class="upload-status">No photo selected</p>
+        <div id="add-photo-preview-wrap" class="photo-preview hidden">
+          <img id="add-photo-preview" class="photo-preview__image" src="" alt="Selected photo preview" />
+        </div>
+
+        <p id="add-error" class="error-text"></p>
+        <button type="submit" class="btn btn--primary btn--full">Save Memory</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- VIEW PIN MODAL -->
+  <div id="modal-view" class="modal-backdrop hidden">
+    <div class="modal modal--bottom">
+      <div class="modal__header">
+        <h2 id="view-place-name" class="modal__title"></h2>
+        <button id="view-close" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="polaroid">
+        <img id="view-photo" class="polaroid__image" src="" alt="" />
+      </div>
+      <p id="view-note" class="view-note"></p>
+      <p class="view-meta">
+        <span id="view-submitted-by" class="view-meta__name"></span>
+        &mdash;
+        <span id="view-date" class="view-meta__date"></span>
+      </p>
+      <button id="view-delete" class="btn btn--danger btn--full hidden" type="button">Delete Memory</button>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- FULLSCREEN PHOTO -->
+  <div id="photo-lightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="Full-size photo">
+    <button id="photo-lightbox-close" class="lightbox__close" type="button" aria-label="Close photo">&times;</button>
+    <img id="photo-lightbox-image" class="lightbox__image" src="" alt="" />
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <script src="js/config.local.js"></script>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((err) => {
+          console.error('[Breadcrumbs] Service Worker registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
