@@ -154,6 +154,12 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   border-color: var(--color-sage);
 }
 
+.input[readonly] {
+  background: #f6f1e8;
+  color: var(--color-brown-mid);
+  cursor: default;
+}
+
 .input--textarea { resize: vertical; min-height: 100px; }
 
 .char-counter {
@@ -234,6 +240,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 }
 
 .btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn--primary { background: var(--color-brown); color: var(--color-white); }
 .btn--primary:hover { opacity: 0.88; }
 .btn--danger { background: var(--color-rose); color: var(--color-white); }

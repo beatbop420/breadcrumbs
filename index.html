@@ -68,7 +68,7 @@
         <span id="note-counter" class="char-counter">0/1000</span>
 
         <label class="label" for="add-submitted-by">Your Name</label>
-        <input id="add-submitted-by" class="input" type="text" placeholder="Your name" maxlength="100" />
+        <input id="add-submitted-by" class="input" type="text" placeholder="Your name" maxlength="100" readonly aria-readonly="true" />
 
         <label class="label" for="add-photo">Photo</label>
         <label id="add-photo-trigger" class="upload-btn" for="add-photo">
@@ -81,7 +81,7 @@
         </div>
 
         <p id="add-error" class="error-text"></p>
-        <button type="submit" class="btn btn--primary btn--full">Save Memory</button>
+        <button id="add-submit-btn" type="submit" class="btn btn--primary btn--full">Save Memory</button>
       </form>
     </div>
   </div>
@@ -93,7 +93,7 @@
         <h2 id="view-place-name" class="modal__title"></h2>
         <button id="view-close" class="btn-icon" aria-label="Close">&times;</button>
       </div>
-      <div class="polaroid">
+      <div id="view-polaroid" class="polaroid">
         <img id="view-photo" class="polaroid__image" src="" alt="" />
       </div>
       <p id="view-note" class="view-note"></p>

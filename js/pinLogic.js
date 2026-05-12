@@ -52,11 +52,12 @@ function isPinOwner(pin, currentUsername) {
 }
 
 function buildPinInsertPayload(cleanData, imagePath, ownerName) {
+  const normalizedOwnerName = normalizeUsername(ownerName);
   return {
     place_name: cleanData.placeName,
     note: cleanData.note || null,
-    submitted_by: cleanData.submittedBy || null,
-    owner_name: normalizeUsername(ownerName),
+    submitted_by: normalizedOwnerName || cleanData.submittedBy || null,
+    owner_name: normalizedOwnerName,
     lat: cleanData.lat,
     lng: cleanData.lng,
     image_path: imagePath || null,

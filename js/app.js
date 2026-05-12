@@ -3,7 +3,7 @@ import { resolveSupabaseConfig } from './config.js';
 import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
 import { getStoredUsername, saveUsername, hasStoredUsername } from './username.js';
 import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, animatePinEntrance } from './map.js';
-import { showToast, showSplash, hideSplash, showUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters } from './ui.js';
+import { showToast, showSplash, hideSplash, showUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters } from './ui.js';
 
 const pinMarkers = new Map();
 let seenPinSet = new Set();
@@ -48,6 +48,7 @@ async function cleanupUploadedPhoto(uploadedImagePath) {
 }
 
 async function handlePinSubmit(cleanData, tempMarker) {
+  setAddModalSubmitting(true);
   const hadSelectedPhoto = Boolean(cleanData.photo);
   let submitStage = 'auth';
   let uploadedImagePath = null;
@@ -75,6 +76,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
     }
 
     const failureMessage = buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath);
+    setAddModalSubmitting(false);
     showAddModalSubmitError(failureMessage);
   }
 }

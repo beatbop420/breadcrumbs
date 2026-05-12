@@ -3,6 +3,8 @@ import { validatePinForm, validateUsername, PIN_NOTE_MAX, PIN_PLACE_NAME_MAX } f
 const TOAST_DURATION_MS = 3000;
 const PHOTO_UPLOAD_DEFAULT_LABEL = 'Choose a photo';
 const PHOTO_UPLOAD_DEFAULT_STATUS = 'No photo selected';
+const ADD_SUBMIT_DEFAULT_LABEL = 'Save Memory';
+const ADD_SUBMIT_LOADING_LABEL = 'Saving...';
 const ADD_MODAL_COUNTER_CONFIGS = [
   { inputId: 'add-note', counterId: 'note-counter', maxLength: PIN_NOTE_MAX },
   { inputId: 'add-place-name', counterId: 'place-name-counter', maxLength: PIN_PLACE_NAME_MAX },
@@ -159,12 +161,37 @@ function setAddPhotoPreview(file) {
 
   if (!file) {
     previewImage.src = '';
+    previewImage.alt = 'Selected photo preview';
     hideElement('add-photo-preview-wrap');
     return;
   }
 
-  addPhotoPreviewObjectUrl = URL.createObjectURL(file);
-  previewImage.src = addPhotoPreviewObjectUrl;
+  previewImage.alt = `Selected photo preview: ${file.name || 'photo'}`;
+
+  try {
+    if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      addPhotoPreviewObjectUrl = URL.createObjectURL(file);
+      previewImage.src = addPhotoPreviewObjectUrl;
+      showElement('add-photo-preview-wrap');
+      return;
+    }
+  } catch (err) {
+    console.warn('[Breadcrumbs] object URL preview failed, falling back to FileReader:', err);
+  }
+
+  if (typeof FileReader === 'function') {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      if (typeof reader.result === 'string') {
+        previewImage.src = reader.result;
+        showElement('add-photo-preview-wrap');
+      }
+    });
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  previewImage.src = '';
   showElement('add-photo-preview-wrap');
 }
 
@@ -250,11 +277,18 @@ function showAddModal(latlng, prefillUsername, onSubmit) {
 
 function hideAddModal() {
   addPinSubmitHandler = null;
+  setAddModalSubmitting(false);
   hideElement('modal-add');
   document.getElementById('add-pin-form').reset();
   clearAddPhotoInput();
   setElementText('add-error', '');
   syncAddModalCounters();
+}
+
+function setAddModalSubmitting(isSubmitting) {
+  const submitButton = document.getElementById('add-submit-btn');
+  submitButton.disabled = isSubmitting;
+  submitButton.textContent = isSubmitting ? ADD_SUBMIT_LOADING_LABEL : ADD_SUBMIT_DEFAULT_LABEL;
 }
 
 function showAddModalSubmitError(errorMessage) {
@@ -299,6 +333,12 @@ function showViewModal(safePin, viewOptions = {}) {
   setElementText('view-note', safePin.note);
   setElementText('view-submitted-by', safePin.submittedBy);
   setElementText('view-date', safePin.date);
+
+  if (safePin.hasPhoto) {
+    showElement('view-polaroid');
+  } else {
+    hideElement('view-polaroid');
+  }
 
   const photoElement = document.getElementById('view-photo');
   photoElement.src = safePin.photoUrl;
@@ -354,6 +394,7 @@ export {
   parseCssTimeToMs,
   getTransitionTimeoutMs,
   getSelectedPhotoStatus,
+  setAddModalSubmitting,
   showPhotoLightbox,
   hidePhotoLightbox,
   showSplash,

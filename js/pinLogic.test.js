@@ -97,6 +97,9 @@ const payloadNoNote = buildPinInsertPayload({ ...cleanData, note: '' }, null, 'S
 expect('buildPinInsertPayload sets empty note to null', payloadNoNote.note, null);
 expect('buildPinInsertPayload sets missing image_path to null', payloadNoNote.image_path, null);
 
+const payloadUsesOwnerName = buildPinInsertPayload({ ...cleanData, submittedBy: 'Someone Else' }, null, 'Sofia');
+expect('buildPinInsertPayload keeps submitted_by aligned to owner_name for new pins', payloadUsesOwnerName.submitted_by, 'Sofia');
+
 // ─── buildSafePinHtml ─────────────────────────────────────────────────────────
 
 const pin = {
