@@ -24,14 +24,14 @@
     <div class="splash__inner">
       <h1 class="splash__title">Breadcrumbs</h1>
       <p class="splash__message">Remember that one time...</p>
-      <button id="splash-start" class="btn btn--primary">Start Exploring</button>
+      <button id="splash-start" class="btn btn--primary">Follow the Trail</button>
     </div>
   </div>
 
   <!-- USERNAME PROMPT -->
   <div id="username-prompt" class="overlay hidden">
     <div class="modal modal--centered">
-      <h2 class="modal__title">What's your name?</h2>
+      <h2 class="modal__title">What do they call you in the forest?</h2>
       <p id="username-prompt-subtitle" class="modal__subtitle">Use the same unique name on any device.</p>
       <form id="username-form" novalidate>
         <input
@@ -52,7 +52,7 @@
   <!-- MAP -->
   <div id="map"></div>
   <div id="active-username-badge" class="identity-badge hidden" aria-live="polite">
-    <span class="identity-badge__label">Signed in as</span>
+    <span class="identity-badge__label">Crumbing as</span>
     <span id="active-username-value" class="identity-badge__value"></span>
   </div>
 
@@ -60,7 +60,7 @@
   <div id="modal-add" class="modal-backdrop hidden">
     <div class="modal modal--bottom">
       <div class="modal__header">
-        <h2 class="modal__title">Add a Memory</h2>
+        <h2 class="modal__title">Drop a Crumb</h2>
         <button id="add-close" class="btn-icon" aria-label="Close">&times;</button>
       </div>
       <form id="add-pin-form" novalidate>
@@ -72,7 +72,7 @@
         <span id="place-name-counter" class="char-counter">0/200</span>
 
         <label class="label" for="add-note">Memory</label>
-        <textarea id="add-note" class="input input--textarea" placeholder="What happened here?" maxlength="1000" rows="4"></textarea>
+        <textarea id="add-note" class="input input--textarea" placeholder="What's the story here?" maxlength="1000" rows="4"></textarea>
         <span id="note-counter" class="char-counter">0/1000</span>
 
         <label class="label" for="add-submitted-by">Your Name</label>
@@ -81,7 +81,7 @@
         <label class="label" for="add-photo">Photo</label>
         <label id="add-photo-trigger" class="upload-btn" for="add-photo">
           <span id="add-photo-label">Choose a photo</span>
-          <input id="add-photo" type="file" accept="image/jpeg,image/png,image/webp" class="upload-input" />
+          <input id="add-photo" type="file" accept="image/*" class="upload-input" />
         </label>
         <p id="add-photo-status" class="upload-status">No photo selected</p>
         <div id="add-photo-preview-wrap" class="photo-preview hidden">
@@ -110,7 +110,7 @@
         &mdash;
         <span id="view-date" class="view-meta__date"></span>
       </p>
-      <button id="view-delete" class="btn btn--danger btn--full hidden" type="button">Delete Memory</button>
+      <button id="view-delete" class="btn btn--danger btn--full hidden" type="button">Delete this crumb</button>
     </div>
   </div>
 

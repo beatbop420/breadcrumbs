@@ -48,7 +48,14 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   background: rgba(253, 251, 247, 0.94);
   box-shadow: 0 6px 18px rgba(61, 43, 31, 0.16);
   backdrop-filter: blur(10px);
-  pointer-events: none;
+  pointer-events: all;
+  cursor: pointer;
+  transition: box-shadow var(--transition), background var(--transition);
+}
+
+.identity-badge:hover {
+  background: rgba(253, 251, 247, 1);
+  box-shadow: 0 6px 22px rgba(61, 43, 31, 0.24);
 }
 
 .identity-badge__label {
@@ -232,7 +239,6 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   height: 1px;
   opacity: 0;
   overflow: hidden;
-  pointer-events: none;
 }
 
 .upload-status {
