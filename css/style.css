@@ -75,6 +75,29 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   color: var(--color-brown);
 }
 
+/* ── FAB (drop a crumb button) ───────────────────────────────────────────── */
+.fab {
+  position: fixed;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-brown);
+  color: var(--color-white);
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(61, 43, 31, 0.32);
+  cursor: pointer;
+  pointer-events: all;
+  transition: opacity var(--transition), box-shadow var(--transition);
+}
+.fab:hover { opacity: 0.88; box-shadow: 0 6px 22px rgba(61, 43, 31, 0.44); }
+.fab.hidden { display: none; }
+
 /* ── OVERLAY (splash + username prompt) ──────────────────────────────────── */
 .overlay {
   position: fixed;

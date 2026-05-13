@@ -3,7 +3,7 @@ import { resolveSupabaseConfig } from './config.js';
 import { readCachedPins, saveCachedPins, upsertCachedPin, removeCachedPin, readCachedSeenPinIds, saveCachedSeenPinIds } from './offlineCache.js';
 import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
 import { getStoredUsername, saveUsername, hasStoredUsername } from './username.js';
-import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, animatePinEntrance } from './map.js';
+import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, moveTemporaryMarker, animatePinEntrance, getMapCenter } from './map.js';
 import { showToast, showSplash, hideSplash, showUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters, setActiveUsernameDisplay } from './ui.js';
 
 const pinMarkers = new Map();
@@ -11,7 +11,63 @@ let seenPinSet = new Set();
 let currentUsername = null;
 let runtimeConfig = null;
 
-async function handleMapTap(latlng) {
+async function geocodePlace(query) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+  const response = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  if (!response.ok) return null;
+  const results = await response.json();
+  if (!results.length) return null;
+  return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+}
+
+function initGeocoding() {
+  const placeInput = document.getElementById('add-place-name');
+  let geocodeTimer = null;
+  placeInput.addEventListener('input', () => {
+    clearTimeout(geocodeTimer);
+    geocodeTimer = setTimeout(async () => {
+      const query = placeInput.value.trim();
+      if (query.length < 3) return;
+      const modal = document.getElementById('modal-add');
+      if (modal.classList.contains('hidden')) return;
+      try {
+        const result = await geocodePlace(query);
+        if (!result) return;
+        if (modal.classList.contains('hidden')) return;
+        document.getElementById('add-lat').value = result.lat;
+        document.getElementById('add-lng').value = result.lng;
+        moveTemporaryMarker({ lat: result.lat, lng: result.lng });
+      } catch (err) {
+        // silent fail — user can still tap the map manually
+      }
+    }, 700);
+  });
+}
+
+function initUsernameBadgeClick() {
+  const badge = document.getElementById('active-username-badge');
+  badge.addEventListener('click', () => {
+    showUsernamePrompt(async (newUsername) => {
+      try {
+        await ensureAccount(newUsername);
+      } catch (err) {
+        console.warn('[Breadcrumbs] ensureAccount on switch skipped:', err);
+      }
+      saveUsername(newUsername);
+      currentUsername = newUsername;
+      setActiveUsernameDisplay(currentUsername);
+      try {
+        seenPinSet = await fetchSeenPinIds(currentUsername);
+        saveCachedSeenPinIds(currentUsername, seenPinSet);
+      } catch (err) {
+        seenPinSet = readCachedSeenPinIds(currentUsername);
+      }
+      pinMarkers.forEach((marker, pinId) => updateMarkerColor(marker, pinId, seenPinSet));
+    }, 'switch');
+  });
+}
+
+function openAddModal(latlng) {
   const tempMarker = addTemporaryMarker(latlng);
   showAddModal(latlng, currentUsername, async (cleanData) => {
     await handlePinSubmit(cleanData, tempMarker);
@@ -24,17 +80,28 @@ async function handleMapTap(latlng) {
   };
 }
 
+async function handleMapTap(latlng) {
+  openAddModal(latlng);
+}
+
+function initFab() {
+  const fab = document.getElementById('drop-crumb-fab');
+  fab.addEventListener('click', () => {
+    openAddModal(getMapCenter());
+  });
+}
+
 function buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath) {
   if (submitStage === 'upload') {
-    return 'Photo upload failed. Please choose the photo again and try once more.';
+    return 'Photo got lost on the trail. Choose it again and tap Leave Your Crumb.';
   }
 
   if (submitStage === 'insert' && hadSelectedPhoto && uploadedImagePath) {
-    return 'Couldn\'t save your memory. Please choose the photo again and tap Save Memory again.';
+    return 'Your crumb got lost in the woods. Choose the photo again and tap Leave Your Crumb.';
   }
 
   if (submitStage === 'insert') {
-    return 'Couldn\'t save your memory. Please tap Save Memory again.';
+    return 'Your crumb got lost in the woods. Try again.';
   }
 
   return 'Something went wrong. Please refresh and try again.';
@@ -67,7 +134,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
     await insertPin(payload);
     removeTemporaryMarker(tempMarker);
     hideAddModal();
-    showToast('Memory added!', 'success');
+    showToast('Crumb dropped!', 'success');
     console.info('[Breadcrumbs] Pin inserted successfully');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinSubmit failed:', err);
@@ -85,7 +152,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
 async function handlePinDelete(pin) {
   const ownerCanDeletePin = isPinOwner(pin, currentUsername);
   if (!ownerCanDeletePin) {
-    showToast('You can only delete your own memories.', 'error');
+    showToast('You can only delete your own crumbs.', 'error');
     return;
   }
 
@@ -124,7 +191,7 @@ async function handlePinDelete(pin) {
     removeCachedPin(pin.id);
 
     hideViewModal();
-    showToast('Memory deleted.', 'success');
+    showToast('Crumb gone.', 'success');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinDelete failed:', err);
     showToast('Couldn\'t delete this memory. Please try again.', 'error');
@@ -184,11 +251,11 @@ async function loadAndRenderPins() {
         const marker = renderPinMarker(pin, seenPinSet, handlePinClick);
         pinMarkers.set(pin.id, marker);
       });
-      showToast('Showing saved memories offline.', 'info');
+      showToast('Showing saved crumbs offline.', 'info');
       console.info(`[Breadcrumbs] Loaded ${cachedPins.length} cached pins`);
       return;
     }
-    showToast('Couldn\'t load memories. Please refresh.', 'error');
+    showToast('Lost in the woods. Please refresh.', 'error');
   }
 }
 
@@ -220,9 +287,11 @@ async function initApp() {
     createSupabaseClient(runtimeConfig.supabaseUrl, runtimeConfig.supabaseAnonKey);
     initMap(handleMapTap);
     initCharCounters();
+    initGeocoding();
     showSplash();
 
     await resolveUsername();
+    initUsernameBadgeClick();
     try {
       seenPinSet = await fetchSeenPinIds(currentUsername);
       saveCachedSeenPinIds(currentUsername, seenPinSet);
@@ -231,9 +300,12 @@ async function initApp() {
       seenPinSet = readCachedSeenPinIds(currentUsername);
     }
 
+    initFab();
+
     const startButton = document.getElementById('splash-start');
     startButton.addEventListener('click', () => {
       hideSplash(async () => {
+        document.getElementById('drop-crumb-fab').classList.remove('hidden');
         await loadAndRenderPins();
         subscribeToNewPins(handleNewRealtimePin);
       });

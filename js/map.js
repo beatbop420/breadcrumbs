@@ -88,6 +88,12 @@ function removeTemporaryMarker() {
   }
 }
 
+function moveTemporaryMarker(latlng) {
+  if (!temporaryMarker) return;
+  temporaryMarker.setLatLng(latlng);
+  mapInstance.panTo(latlng);
+}
+
 function animatePinEntrance(marker) {
   const iconElement = marker.getElement();
   if (!iconElement) return;
@@ -113,6 +119,12 @@ function animatePinEntrance(marker) {
   }, { once: true });
 }
 
+function getMapCenter() {
+  if (!mapInstance) return { lat: 20, lng: 0 };
+  const center = mapInstance.getCenter();
+  return { lat: center.lat, lng: center.lng };
+}
+
 export {
   getSingleWorldMinZoom,
   initMap,
@@ -120,5 +132,7 @@ export {
   updateMarkerColor,
   addTemporaryMarker,
   removeTemporaryMarker,
+  moveTemporaryMarker,
   animatePinEntrance,
+  getMapCenter,
 };
