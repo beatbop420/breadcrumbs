@@ -142,7 +142,7 @@ function animatePinDelete(marker) {
       `height:${CROW_H}px`,
       'z-index:9999',
       'pointer-events:none',
-      'transition:left 0.5s ease-in',
+      'transition:left 0.9s ease-in',
     ].join(';');
     document.body.appendChild(bird);
 
@@ -154,13 +154,14 @@ function animatePinDelete(marker) {
       pinDot.style.transform = 'scale(0)';
       pinDot.style.opacity = '0';
 
-      bird.style.transition = 'left 0.4s ease-in';
-      bird.style.left = `${window.innerWidth + CROW_W}px`;
-
-      bird.addEventListener('transitionend', () => {
-        bird.remove();
-        resolve();
-      }, { once: true });
+      setTimeout(() => {
+        bird.style.transition = 'left 0.5s ease-in';
+        bird.style.left = `${window.innerWidth + CROW_W}px`;
+        bird.addEventListener('transitionend', () => {
+          bird.remove();
+          resolve();
+        }, { once: true });
+      }, 180);
     }, { once: true });
   });
 }
