@@ -1,6 +1,6 @@
 import { validatePinForm, validateUsername, PIN_NOTE_MAX, PIN_PLACE_NAME_MAX } from './data.js';
 
-const TOAST_DURATION_MS = 3000;
+const TOAST_DURATION_MS = 1600;
 const PHOTO_UPLOAD_DEFAULT_LABEL = 'Choose a photo';
 const PHOTO_UPLOAD_DEFAULT_STATUS = 'No photo selected';
 const ADD_SUBMIT_DEFAULT_LABEL = 'Save Memory';

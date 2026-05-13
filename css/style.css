@@ -372,9 +372,9 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 /* ── TOAST ───────────────────────────────────────────────────────────────── */
 .toast {
   position: fixed;
-  bottom: 24px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 200;
   padding: 12px 24px;
   border-radius: 24px;

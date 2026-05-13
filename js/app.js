@@ -147,7 +147,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
     await insertPin(payload);
     removeTemporaryMarker(tempMarker);
     hideAddModal();
-    showToast('Memory saved!', 'success');
+    showToast('Baked in. 🍞', 'success');
     console.info('[Breadcrumbs] Pin inserted successfully');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinSubmit failed:', err);
