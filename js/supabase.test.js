@@ -12,6 +12,8 @@ import {
   fetchSeenPinIds,
   insertView,
   uploadPhoto,
+  downloadPhoto,
+  restorePhoto,
   deletePhoto,
   deletePin,
 } from './supabase.js';
@@ -28,10 +30,15 @@ function buildMockClient({
   createAccountError = null,
   insertError = null,
   uploadError = null,
+  downloadError = null,
+  downloadData = { type: 'image/jpeg', size: 1234 },
   removeError = null,
   deletePinError = null,
   deletedPinsData = [{ id: 'pin-1', owner_name: 'Sofia', image_path: 'abc.jpg' }],
   authError = null,
+  uploadCalls = [],
+  accountFilterCalls = [],
+  deleteFilterCalls = [],
 } = {}) {
   return {
     auth: {
@@ -57,6 +64,16 @@ function buildMockClient({
               : { data: viewsData, error: viewsError ? { message: viewsError } : null }
           ).then(resolve),
         }),
+        ilike: (columnName, filterValue) => {
+          if (tableName === 'accounts') {
+            accountFilterCalls.push({ columnName, filterValue });
+          }
+          return Promise.resolve(
+            tableName === 'accounts'
+              ? { data: accountsData, error: accountsError ? { message: accountsError } : null }
+              : { data: [], error: null }
+          );
+        },
       }),
       insert: (payload) => ({
         select: () => ({
@@ -80,23 +97,37 @@ function buildMockClient({
         ).then(resolve),
       }),
       delete: () => ({
-        eq: () => ({
-          eq: () => ({
+        eq: (columnName, filterValue) => ({
+          ilike: (innerColumnName, innerFilterValue) => {
+            deleteFilterCalls.push(
+              { columnName, filterValue },
+              { columnName: innerColumnName, filterValue: innerFilterValue }
+            );
+            return {
             select: () => Promise.resolve(
               deletePinError
                 ? { data: null, error: { message: deletePinError } }
                 : { data: deletedPinsData, error: null }
             ),
-          }),
+            };
+          },
         }),
       }),
     }),
     storage: {
       from: () => ({
-        upload: () => Promise.resolve(
+        upload: (path, file, options) => {
+          uploadCalls.push({ path, file, options });
+          return Promise.resolve(
           uploadError
             ? { error: { message: uploadError } }
             : { error: null }
+          );
+        },
+        download: () => Promise.resolve(
+          downloadError
+            ? { data: null, error: { message: downloadError } }
+            : { data: downloadData, error: null }
         ),
         remove: () => Promise.resolve(
           removeError
@@ -153,9 +184,11 @@ expect('fetchAllPins throws on DB error', fetchErr !== null, true);
 
 // ─── account helpers ──────────────────────────────────────────────────────────
 
-setClientForTesting(buildMockClient({ accountsData: [{ name: 'Sofia' }] }));
+const accountFilterCalls = [];
+setClientForTesting(buildMockClient({ accountsData: [{ name: 'Sofia' }], accountFilterCalls }));
 const account = await fetchAccountByName('Sofia');
 expect('fetchAccountByName returns account data', account.name, 'Sofia');
+expect('fetchAccountByName uses case-insensitive matching', accountFilterCalls[0].columnName, 'name');
 
 setClientForTesting(buildMockClient());
 const createdAccount = await createAccount('Mila');
@@ -211,6 +244,29 @@ let uploadErr = null;
 try { await uploadPhoto({ name: 'photo.jpg' }, 'pins/test.jpg'); } catch (err) { uploadErr = err.message; }
 expect('uploadPhoto throws on storage error', uploadErr !== null, true);
 
+// ─── downloadPhoto / restorePhoto ───────────────────────────────────────────
+
+setClientForTesting(buildMockClient({ downloadData: { type: 'image/webp', size: 2048 } }));
+const downloadedPhoto = await downloadPhoto('pins/test.webp');
+expect('downloadPhoto returns storage data on success', downloadedPhoto.size, 2048);
+
+setClientForTesting(buildMockClient({ downloadError: 'Download failed' }));
+let downloadErr = null;
+try { await downloadPhoto('pins/test.webp'); } catch (err) { downloadErr = err.message; }
+expect('downloadPhoto throws on storage download error', downloadErr !== null, true);
+
+const restoreUploadCalls = [];
+setClientForTesting(buildMockClient({ uploadCalls: restoreUploadCalls }));
+const restoredPhotoPath = await restorePhoto({ type: 'image/png' }, 'pins/test.png');
+expect('restorePhoto returns normalized storage path on success', restoredPhotoPath, 'test.png');
+expect('restorePhoto uploads with upsert enabled', restoreUploadCalls[0].options.upsert, true);
+expect('restorePhoto preserves content type when present', restoreUploadCalls[0].options.contentType, 'image/png');
+
+setClientForTesting(buildMockClient({ uploadError: 'Restore failed' }));
+let restoreErr = null;
+try { await restorePhoto({ type: 'image/png' }, 'pins/test.png'); } catch (err) { restoreErr = err.message; }
+expect('restorePhoto throws on storage upload error', restoreErr !== null, true);
+
 // ─── deletePhoto ──────────────────────────────────────────────────────────────
 
 setClientForTesting(buildMockClient());
@@ -225,9 +281,12 @@ expect('deletePhoto throws on storage remove error', removeErr !== null, true);
 
 // ─── deletePin ────────────────────────────────────────────────────────────────
 
-setClientForTesting(buildMockClient());
+const deleteFilterCalls = [];
+setClientForTesting(buildMockClient({ deleteFilterCalls }));
 const deletedPin = await deletePin('pin-1', 'Sofia');
 expect('deletePin returns the deleted pin record', deletedPin.id, 'pin-1');
+expect('deletePin still filters by pin id first', deleteFilterCalls[0].columnName, 'id');
+expect('deletePin matches owner name case-insensitively', deleteFilterCalls[1].columnName, 'owner_name');
 
 setClientForTesting(buildMockClient({ deletedPinsData: [] }));
 let missingDeleteErr = null;

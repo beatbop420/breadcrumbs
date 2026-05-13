@@ -129,6 +129,23 @@ function showUsernamePrompt(onSubmit) {
   showElement('username-prompt');
 }
 
+function buildActiveUsernameLabel(username) {
+  if (typeof username !== 'string') return '';
+  return username.trim();
+}
+
+function setActiveUsernameDisplay(username) {
+  const activeUsername = buildActiveUsernameLabel(username);
+  if (activeUsername.length === 0) {
+    hideElement('active-username-badge');
+    setElementText('active-username-value', '');
+    return;
+  }
+
+  setElementText('active-username-value', activeUsername);
+  showElement('active-username-badge');
+}
+
 function setCharCounter(inputId, counterId, maxLength) {
   const counterInput = document.getElementById(inputId);
   const counterElement = document.getElementById(counterId);
@@ -334,11 +351,7 @@ function showViewModal(safePin, viewOptions = {}) {
   setElementText('view-submitted-by', safePin.submittedBy);
   setElementText('view-date', safePin.date);
 
-  if (safePin.hasPhoto) {
-    showElement('view-polaroid');
-  } else {
-    hideElement('view-polaroid');
-  }
+  showElement('view-polaroid');
 
   const photoElement = document.getElementById('view-photo');
   photoElement.src = safePin.photoUrl;
@@ -394,6 +407,8 @@ export {
   parseCssTimeToMs,
   getTransitionTimeoutMs,
   getSelectedPhotoStatus,
+  buildActiveUsernameLabel,
+  setActiveUsernameDisplay,
   setAddModalSubmitting,
   showPhotoLightbox,
   hidePhotoLightbox,

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'breadcrumbs-v1';
+const CACHE_NAME = 'breadcrumbs-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   '/js/config.js',
   '/js/config.local.js',
   '/js/map.js',
+  '/js/offlineCache.js',
   '/js/ui.js',
   '/js/supabase.js',
   '/js/pinLogic.js',

@@ -3,6 +3,7 @@ import {
   isUnseenPin,
   getPinColor,
   normalizeUsername,
+  normalizeUsernameIdentity,
   normalizeStoragePath,
   buildStoragePath,
   buildPhotoUrl,
@@ -33,6 +34,7 @@ expect('getPinColor returns seen color for viewed pin', getPinColor('pin-001', s
 
 expect('normalizeUsername trims whitespace', normalizeUsername('  Sofia  '), 'Sofia');
 expect('normalizeUsername returns empty string for non-string', normalizeUsername(null), '');
+expect('normalizeUsernameIdentity lowercases for identity matching', normalizeUsernameIdentity('  Sofia  '), 'sofia');
 
 // ─── buildStoragePath ─────────────────────────────────────────────────────────
 
@@ -72,6 +74,7 @@ const ownerPin = {
 expect('resolvePinOwnerName prefers owner_name', resolvePinOwnerName(ownerPin), 'Sofia');
 expect('resolvePinOwnerName falls back to submitted_by', resolvePinOwnerName({ submitted_by: 'Rosa' }), 'Rosa');
 expect('isPinOwner returns true for matching owner', isPinOwner(ownerPin, 'Sofia'), true);
+expect('isPinOwner returns true across case differences', isPinOwner(ownerPin, 'sofia'), true);
 expect('isPinOwner returns false for non-owner', isPinOwner(ownerPin, 'Mila'), false);
 
 // ─── formatPinDate ────────────────────────────────────────────────────────────

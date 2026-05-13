@@ -1,9 +1,10 @@
-import { createSupabaseClient, signInAnonymously, fetchAllPins, ensureAccount, insertPin, fetchSeenPinIds, insertView, uploadPhoto, deletePhoto, deletePin, subscribeToNewPins } from './supabase.js';
+import { createSupabaseClient, signInAnonymously, fetchAllPins, ensureAccount, insertPin, fetchSeenPinIds, insertView, uploadPhoto, downloadPhoto, restorePhoto, deletePhoto, deletePin, subscribeToNewPins } from './supabase.js';
 import { resolveSupabaseConfig } from './config.js';
+import { readCachedPins, saveCachedPins, upsertCachedPin, removeCachedPin, readCachedSeenPinIds, saveCachedSeenPinIds } from './offlineCache.js';
 import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
 import { getStoredUsername, saveUsername, hasStoredUsername } from './username.js';
 import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, animatePinEntrance } from './map.js';
-import { showToast, showSplash, hideSplash, showUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters } from './ui.js';
+import { showToast, showSplash, hideSplash, showUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters, setActiveUsernameDisplay } from './ui.js';
 
 const pinMarkers = new Map();
 let seenPinSet = new Set();
@@ -93,15 +94,26 @@ async function handlePinDelete(pin) {
 
   try {
     await signInAnonymously();
-    const deletedPin = await deletePin(pin.id, currentUsername);
+    let photoBackup = null;
 
-    if (deletedPin.image_path) {
-      try {
-        await deletePhoto(deletedPin.image_path);
-      } catch (err) {
-        console.error('[Breadcrumbs] deletePhoto during confirmed delete failed:', err);
-        showToast('Memory deleted, but photo cleanup failed.', 'error');
+    if (pin.image_path) {
+      photoBackup = await downloadPhoto(pin.image_path);
+      await deletePhoto(pin.image_path);
+    }
+
+    try {
+      await deletePin(pin.id, currentUsername);
+    } catch (deleteErr) {
+      if (pin.image_path && photoBackup) {
+        try {
+          await restorePhoto(photoBackup, pin.image_path);
+        } catch (restoreErr) {
+          console.error('[Breadcrumbs] restorePhoto after deletePin failure failed:', restoreErr);
+          throw new Error('Couldn\'t delete this memory, and the photo restore also failed.');
+        }
       }
+
+      throw deleteErr;
     }
 
     const marker = pinMarkers.get(pin.id);
@@ -109,6 +121,7 @@ async function handlePinDelete(pin) {
       marker.remove();
       pinMarkers.delete(pin.id);
     }
+    removeCachedPin(pin.id);
 
     hideViewModal();
     showToast('Memory deleted.', 'success');
@@ -135,6 +148,7 @@ async function handlePinClick(pin) {
   try {
     await insertView(currentUsername, pin.id);
     seenPinSet.add(pin.id);
+    saveCachedSeenPinIds(currentUsername, seenPinSet);
     const marker = pinMarkers.get(pin.id);
     if (marker) updateMarkerColor(marker, pin.id, seenPinSet);
   } catch (err) {
@@ -146,6 +160,7 @@ function handleNewRealtimePin(newPin) {
   if (pinMarkers.has(newPin.id)) return;
   const marker = renderPinMarker(newPin, seenPinSet, handlePinClick);
   pinMarkers.set(newPin.id, marker);
+  upsertCachedPin(newPin);
   animatePinEntrance(marker);
   console.info('[Breadcrumbs] Realtime pin rendered:', newPin.id);
 }
@@ -153,6 +168,7 @@ function handleNewRealtimePin(newPin) {
 async function loadAndRenderPins() {
   try {
     const pins = await fetchAllPins();
+    saveCachedPins(pins);
     pins.forEach((pin) => {
       const marker = renderPinMarker(pin, seenPinSet, handlePinClick);
       pinMarkers.set(pin.id, marker);
@@ -160,6 +176,17 @@ async function loadAndRenderPins() {
     console.info(`[Breadcrumbs] Loaded ${pins.length} pins`);
   } catch (err) {
     console.error('[Breadcrumbs] loadAndRenderPins failed:', err);
+    const cachedPins = readCachedPins();
+    if (cachedPins.length > 0) {
+      cachedPins.forEach((pin) => {
+        if (pinMarkers.has(pin.id)) return;
+        const marker = renderPinMarker(pin, seenPinSet, handlePinClick);
+        pinMarkers.set(pin.id, marker);
+      });
+      showToast('Showing saved memories offline.', 'info');
+      console.info(`[Breadcrumbs] Loaded ${cachedPins.length} cached pins`);
+      return;
+    }
     showToast('Couldn\'t load memories. Please refresh.', 'error');
   }
 }
@@ -167,7 +194,12 @@ async function loadAndRenderPins() {
 async function resolveUsername() {
   if (hasStoredUsername()) {
     currentUsername = getStoredUsername();
-    await ensureAccount(currentUsername);
+    setActiveUsernameDisplay(currentUsername);
+    try {
+      await ensureAccount(currentUsername);
+    } catch (err) {
+      console.warn('[Breadcrumbs] ensureAccount skipped while offline/unavailable:', err);
+    }
     return;
   }
   await new Promise((resolve) => {
@@ -175,6 +207,7 @@ async function resolveUsername() {
       await ensureAccount(username);
       saveUsername(username);
       currentUsername = username;
+      setActiveUsernameDisplay(currentUsername);
       resolve();
     });
   });
@@ -189,7 +222,13 @@ async function initApp() {
     showSplash();
 
     await resolveUsername();
-    seenPinSet = await fetchSeenPinIds(currentUsername);
+    try {
+      seenPinSet = await fetchSeenPinIds(currentUsername);
+      saveCachedSeenPinIds(currentUsername, seenPinSet);
+    } catch (err) {
+      console.warn('[Breadcrumbs] Using cached seen-pin state:', err);
+      seenPinSet = readCachedSeenPinIds(currentUsername);
+    }
 
     const startButton = document.getElementById('splash-start');
     startButton.addEventListener('click', () => {

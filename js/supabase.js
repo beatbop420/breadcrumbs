@@ -32,7 +32,7 @@ async function fetchAllPins() {
 
 async function fetchAccountByName(username) {
   const client = getClient();
-  const { data: accountRows, error } = await client.from('accounts').select('name').eq('name', username);
+  const { data: accountRows, error } = await client.from('accounts').select('name').ilike('name', username);
   if (error) throw new Error(`[Breadcrumbs] fetchAccountByName failed: ${error.message}`);
   return Array.isArray(accountRows) && accountRows.length > 0 ? accountRows[0] : null;
 }
@@ -89,6 +89,28 @@ async function uploadPhoto(file, storagePath) {
   return normalizedPath;
 }
 
+async function downloadPhoto(storagePath) {
+  const client = getClient();
+  const normalizedPath = normalizeStoragePath(storagePath);
+  if (!normalizedPath) throw new Error('[Breadcrumbs] downloadPhoto requires a valid storage path.');
+  const { data, error } = await client.storage.from(STORAGE_BUCKET_NAME).download(normalizedPath);
+  if (error) throw new Error(`[Breadcrumbs] downloadPhoto failed: ${error.message}`);
+  return data;
+}
+
+async function restorePhoto(file, storagePath) {
+  const client = getClient();
+  const normalizedPath = normalizeStoragePath(storagePath);
+  if (!normalizedPath) throw new Error('[Breadcrumbs] restorePhoto requires a valid storage path.');
+  const uploadOptions = { upsert: true };
+  if (file && typeof file.type === 'string' && file.type.length > 0) {
+    uploadOptions.contentType = file.type;
+  }
+  const { error } = await client.storage.from(STORAGE_BUCKET_NAME).upload(normalizedPath, file, uploadOptions);
+  if (error) throw new Error(`[Breadcrumbs] restorePhoto failed: ${error.message}`);
+  return normalizedPath;
+}
+
 async function deletePhoto(storagePath) {
   const client = getClient();
   const normalizedPath = normalizeStoragePath(storagePath);
@@ -103,7 +125,7 @@ async function deletePin(pinId, ownerName) {
     .from('pins')
     .delete()
     .eq('id', pinId)
-    .eq('owner_name', ownerName)
+    .ilike('owner_name', ownerName)
     .select('*');
 
   if (error) throw new Error(`[Breadcrumbs] deletePin failed: ${error.message}`);
@@ -140,6 +162,8 @@ export {
   fetchSeenPinIds,
   insertView,
   uploadPhoto,
+  downloadPhoto,
+  restorePhoto,
   deletePhoto,
   deletePin,
   subscribeToNewPins,

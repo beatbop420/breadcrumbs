@@ -2,8 +2,12 @@ import { getPinColor } from './pinLogic.js';
 
 const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const TILE_ATTRIBUTION = '&copy; <a href="https://carto.com/">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-const MAP_INITIAL_ZOOM = 2;
 const MAP_INITIAL_CENTER = [20, 0];
+const MAP_BASE_MIN_ZOOM = 1;
+const MAP_ZOOM_SNAP = 0.1;
+const MAP_ZOOM_DELTA = 0.25;
+const MAP_WORLD_FIT_PADDING_PX = 96;
+const TILE_SIZE_PX = 256;
 const PIN_ENTRANCE_TRANSITION = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease';
 
 let mapInstance = null;
@@ -18,10 +22,35 @@ function buildPinIcon(color) {
   });
 }
 
+function getSingleWorldMinZoom(viewportWidth) {
+  const numericWidth = Number(viewportWidth);
+  if (!Number.isFinite(numericWidth) || numericWidth <= 0) return MAP_BASE_MIN_ZOOM;
+
+  const paddedWidth = numericWidth + MAP_WORLD_FIT_PADDING_PX;
+  return Math.max(MAP_BASE_MIN_ZOOM, Math.log2(paddedWidth / TILE_SIZE_PX));
+}
+
 function initMap(onMapTap) {
-  mapInstance = window.L.map('map', { zoomControl: true }).setView(MAP_INITIAL_CENTER, MAP_INITIAL_ZOOM);
-  window.L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).addTo(mapInstance);
+  const singleWorldMinZoom = getSingleWorldMinZoom(window.innerWidth);
+  mapInstance = window.L.map('map', {
+    zoomControl: true,
+    minZoom: singleWorldMinZoom,
+    zoomSnap: MAP_ZOOM_SNAP,
+    zoomDelta: MAP_ZOOM_DELTA,
+    worldCopyJump: true,
+  }).setView(MAP_INITIAL_CENTER, singleWorldMinZoom);
+  window.L.tileLayer(TILE_URL, {
+    attribution: TILE_ATTRIBUTION,
+    maxZoom: 19,
+  }).addTo(mapInstance);
   mapInstance.on('click', (event) => onMapTap(event.latlng));
+  window.addEventListener('resize', () => {
+    const nextMinZoom = getSingleWorldMinZoom(window.innerWidth);
+    mapInstance.setMinZoom(nextMinZoom);
+    if (mapInstance.getZoom() < nextMinZoom) {
+      mapInstance.setZoom(nextMinZoom);
+    }
+  });
   console.info('[Breadcrumbs] Map initialized');
   return mapInstance;
 }
@@ -85,6 +114,7 @@ function animatePinEntrance(marker) {
 }
 
 export {
+  getSingleWorldMinZoom,
   initMap,
   renderPinMarker,
   updateMarkerColor,

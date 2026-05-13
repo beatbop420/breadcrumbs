@@ -18,6 +18,10 @@ function normalizeUsername(rawUsername) {
   return rawUsername.trim();
 }
 
+function normalizeUsernameIdentity(rawUsername) {
+  return normalizeUsername(rawUsername).toLowerCase();
+}
+
 function normalizeStoragePath(rawPath) {
   if (typeof rawPath !== 'string') return '';
   return rawPath.trim().replace(/^\/?pins\//, '');
@@ -47,8 +51,9 @@ function resolvePinOwnerName(pin) {
 }
 
 function isPinOwner(pin, currentUsername) {
-  const ownerName = resolvePinOwnerName(pin);
-  return ownerName.length > 0 && ownerName === normalizeUsername(currentUsername);
+  const ownerName = normalizeUsernameIdentity(resolvePinOwnerName(pin));
+  const currentIdentity = normalizeUsernameIdentity(currentUsername);
+  return ownerName.length > 0 && ownerName === currentIdentity;
 }
 
 function buildPinInsertPayload(cleanData, imagePath, ownerName) {
@@ -81,6 +86,7 @@ export {
   isUnseenPin,
   getPinColor,
   normalizeUsername,
+  normalizeUsernameIdentity,
   normalizeStoragePath,
   buildStoragePath,
   buildPhotoUrl,
