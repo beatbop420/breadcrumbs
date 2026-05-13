@@ -3,8 +3,8 @@ import { validatePinForm, validateUsername, PIN_NOTE_MAX, PIN_PLACE_NAME_MAX } f
 const TOAST_DURATION_MS = 3000;
 const PHOTO_UPLOAD_DEFAULT_LABEL = 'Choose a photo';
 const PHOTO_UPLOAD_DEFAULT_STATUS = 'No photo selected';
-const ADD_SUBMIT_DEFAULT_LABEL = 'Leave Your Crumb';
-const ADD_SUBMIT_LOADING_LABEL = 'Dropping...';
+const ADD_SUBMIT_DEFAULT_LABEL = 'Save Memory';
+const ADD_SUBMIT_LOADING_LABEL = 'Saving...';
 const ADD_MODAL_COUNTER_CONFIGS = [
   { inputId: 'add-note', counterId: 'note-counter', maxLength: PIN_NOTE_MAX },
   { inputId: 'add-place-name', counterId: 'place-name-counter', maxLength: PIN_PLACE_NAME_MAX },
@@ -127,7 +127,7 @@ function showUsernamePrompt(onSubmit, mode = 'initial') {
   document.getElementById('username-input').value = '';
   setElementText('username-error', '');
   const subtitle = mode === 'switch'
-    ? 'Who\'s following the trail now?'
+    ? 'Who\'s here now?'
     : 'Use the same name on any device to find your way back.';
   setElementText('username-prompt-subtitle', subtitle);
   showElement('username-prompt');

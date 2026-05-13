@@ -99,15 +99,15 @@ function initFab() {
 
 function buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath) {
   if (submitStage === 'upload') {
-    return 'Photo didn\'t make it. Choose it again and tap Leave Your Crumb.';
+    return 'Photo didn\'t upload. Choose it again and try saving.';
   }
 
   if (submitStage === 'insert' && hadSelectedPhoto && uploadedImagePath) {
-    return 'Your crumb didn\'t make it. Choose the photo again and tap Leave Your Crumb.';
+    return 'Didn\'t save. Choose the photo again and try again.';
   }
 
   if (submitStage === 'insert') {
-    return 'Your crumb didn\'t make it. Try again.';
+    return 'Didn\'t save. Try again.';
   }
 
   return 'Something went wrong. Please refresh and try again.';
@@ -140,7 +140,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
     await insertPin(payload);
     removeTemporaryMarker(tempMarker);
     hideAddModal();
-    showToast('Crumb dropped!', 'success');
+    showToast('Memory saved!', 'success');
     console.info('[Breadcrumbs] Pin inserted successfully');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinSubmit failed:', err);
@@ -158,7 +158,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
 async function handlePinDelete(pin) {
   const ownerCanDeletePin = isPinOwner(pin, currentUsername);
   if (!ownerCanDeletePin) {
-    showToast('You can only delete your own crumbs.', 'error');
+    showToast('You can only delete your own pins.', 'error');
     return;
   }
 
@@ -199,10 +199,10 @@ async function handlePinDelete(pin) {
       marker.remove();
     }
 
-    showToast('Gone without a crumb.', 'success');
+    showToast('Gone.', 'success');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinDelete failed:', err);
-    showToast('Couldn\'t delete this crumb. Please try again.', 'error');
+    showToast('Couldn\'t delete this pin. Please try again.', 'error');
   }
 }
 
@@ -259,7 +259,7 @@ async function loadAndRenderPins() {
         const marker = renderPinMarker(pin, seenPinSet, handlePinClick);
         pinMarkers.set(pin.id, marker);
       });
-      showToast('Showing saved crumbs offline.', 'info');
+      showToast('Showing saved pins offline.', 'info');
       console.info(`[Breadcrumbs] Loaded ${cachedPins.length} cached pins`);
       return;
     }
