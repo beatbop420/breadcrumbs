@@ -1,7 +1,7 @@
 # Breadcrumbs — Requirements Lock Document
 **Version:** 1.5
 **Date:** 2026-05-11
-**Status:** CONFIRMED ✅ — v1.5 syncs the requirements to the current implemented app and the latest UX additions
+**Status:** BASELINE SPEC — Verification is complete against this baseline, but not every item passed exactly as written. See the Verification Report for final pass/fail/exception results.
 
 ---
 

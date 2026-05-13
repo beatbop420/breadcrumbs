@@ -1,19 +1,15 @@
 # Breadcrumbs — Architecture Document
 **Version:** 1.7
 **Date:** 2026-05-11
-**Status:** APPROVED ✅ — v1.7 syncs the document to the live fixes that were actually applied during manual verification.
+**Status:** APPROVED ✅ — updated to reflect the implemented app at Phase 3 closeout.
 
 ## 0. CURRENT STATE AND NEXT PHASE
 
-**Current implementation state:** The app now supports working anonymous insert, authenticated reads, owner delete, public photo storage, add-photo preview, and full-screen photo viewing. The major live blockers found during manual verification were fixed.
+**Current implementation state:** The app now supports working anonymous insert, authenticated reads, owner delete, public photo storage, add-photo preview, full-screen photo viewing, realtime inserts, offline cached pin viewing, and the final wrapped single-world map behavior. The major live blockers found during manual verification were fixed.
 
-**Next active phase:** Phase 3 verification.
+**Current phase status:** Phase 3 verification is complete.
 
-Verification should now focus on:
-1. broader manual regression around realtime and delete
-2. final browser/PWA checks
-3. confirming the new photo preview and lightbox UX on-device
-4. documenting future product decisions such as optional geocoding
+**Next active phase:** None by default. Phase 4 Security Review is pending explicit approval.
 
 ---
 
