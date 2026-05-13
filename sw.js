@@ -1,21 +1,20 @@
-const CACHE_NAME = 'breadcrumbs-v3';
+const CACHE_NAME = 'breadcrumbs-v4';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/app.js',
-  '/js/config.js',
-  '/js/config.local.js',
-  '/js/map.js',
-  '/js/offlineCache.js',
-  '/js/ui.js',
-  '/js/supabase.js',
-  '/js/pinLogic.js',
-  '/js/username.js',
-  '/js/data.js',
-  '/manifest.json',
-  '/assets/pin-placeholder.svg',
-  '/assets/icon.svg',
+  '/breadcrumbs/',
+  '/breadcrumbs/index.html',
+  '/breadcrumbs/css/style.css',
+  '/breadcrumbs/js/app.js',
+  '/breadcrumbs/js/config.js',
+  '/breadcrumbs/js/map.js',
+  '/breadcrumbs/js/offlineCache.js',
+  '/breadcrumbs/js/ui.js',
+  '/breadcrumbs/js/supabase.js',
+  '/breadcrumbs/js/pinLogic.js',
+  '/breadcrumbs/js/username.js',
+  '/breadcrumbs/js/data.js',
+  '/breadcrumbs/manifest.json',
+  '/breadcrumbs/assets/pin-placeholder.svg',
+  '/breadcrumbs/assets/icon.svg',
 ];
 
 self.addEventListener('install', (event) => {
