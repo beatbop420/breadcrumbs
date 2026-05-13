@@ -226,7 +226,14 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   color: var(--color-sage);
   background: rgba(122, 158, 126, 0.08);
 }
-.upload-input { display: none; }
+.upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
 
 .upload-status {
   font-size: 0.82rem;
