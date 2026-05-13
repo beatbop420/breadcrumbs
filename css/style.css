@@ -372,7 +372,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 /* ── TOAST ───────────────────────────────────────────────────────────────── */
 .toast {
   position: fixed;
-  top: 50%;
+  top: 28%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 200;
@@ -386,7 +386,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 }
 
 .toast.hidden { display: none; }
-.toast--success { background: var(--color-sage); color: var(--color-white); }
+.toast--success { background: var(--color-brown); color: var(--color-white); }
 .toast--error   { background: var(--color-error); color: var(--color-white); }
 .toast--info    { background: var(--color-brown); color: var(--color-white); }
 

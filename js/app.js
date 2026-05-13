@@ -147,7 +147,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
     await insertPin(payload);
     removeTemporaryMarker(tempMarker);
     hideAddModal();
-    showToast('Baked in. 🍞', 'success');
+    showToast('Bread successfully deployed.', 'success');
     console.info('[Breadcrumbs] Pin inserted successfully');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinSubmit failed:', err);
@@ -206,7 +206,7 @@ async function handlePinDelete(pin) {
       marker.remove();
     }
 
-    showToast('Gone.', 'success');
+    showToast('The creatures in the woods have been fed.', 'success');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinDelete failed:', err);
     showToast('Couldn\'t delete this pin. Please try again.', 'error');
