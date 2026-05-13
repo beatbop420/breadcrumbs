@@ -121,6 +121,11 @@ function initializeUsernamePrompt() {
   });
 }
 
+function hideUsernamePrompt() {
+  hideElement('username-prompt');
+  usernameSubmitHandler = null;
+}
+
 function showUsernamePrompt(onSubmit, mode = 'initial') {
   initializeUsernamePrompt();
   usernameSubmitHandler = onSubmit;
@@ -130,6 +135,12 @@ function showUsernamePrompt(onSubmit, mode = 'initial') {
     ? 'Who\'s here now?'
     : 'Use the same name on any device to find your way back.';
   setElementText('username-prompt-subtitle', subtitle);
+  const closeBtn = document.getElementById('username-close');
+  if (mode === 'switch') {
+    closeBtn.classList.remove('hidden');
+  } else {
+    closeBtn.classList.add('hidden');
+  }
   showElement('username-prompt');
 }
 
@@ -419,6 +430,7 @@ export {
   showSplash,
   hideSplash,
   showUsernamePrompt,
+  hideUsernamePrompt,
   showAddModal,
   hideAddModal,
   showAddModalSubmitError,

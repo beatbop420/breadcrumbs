@@ -31,7 +31,10 @@
   <!-- USERNAME PROMPT -->
   <div id="username-prompt" class="overlay hidden">
     <div class="modal modal--centered">
-      <h2 class="modal__title">Hey, what's your name?</h2>
+      <div class="modal__header">
+        <h2 class="modal__title">Hey, what's your name?</h2>
+        <button id="username-close" class="btn-icon hidden" aria-label="Close">&times;</button>
+      </div>
       <p id="username-prompt-subtitle" class="modal__subtitle">Use the same unique name on any device.</p>
       <form id="username-form" novalidate>
         <input
@@ -48,6 +51,7 @@
       </form>
     </div>
   </div>
+
 
   <!-- MAP -->
   <div id="map"></div>

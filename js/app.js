@@ -4,7 +4,7 @@ import { readCachedPins, saveCachedPins, upsertCachedPin, removeCachedPin, readC
 import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
 import { getStoredUsername, saveUsername, hasStoredUsername } from './username.js';
 import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, moveTemporaryMarker, animatePinEntrance, animatePinDelete, getMapCenter } from './map.js';
-import { showToast, showSplash, hideSplash, showUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters, setActiveUsernameDisplay } from './ui.js';
+import { showToast, showSplash, hideSplash, showUsernamePrompt, hideUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters, setActiveUsernameDisplay } from './ui.js';
 
 const pinMarkers = new Map();
 let seenPinSet = new Set();
@@ -64,6 +64,13 @@ function initUsernameBadgeClick() {
       }
       pinMarkers.forEach((marker, pinId) => updateMarkerColor(marker, pinId, seenPinSet));
     }, 'switch');
+
+    document.getElementById('username-close').onclick = hideUsernamePrompt;
+
+    const overlay = document.getElementById('username-prompt');
+    overlay.onclick = (event) => {
+      if (event.target === overlay) hideUsernamePrompt();
+    };
   });
 }
 
