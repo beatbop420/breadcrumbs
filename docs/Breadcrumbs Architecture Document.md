@@ -1,15 +1,15 @@
 # Breadcrumbs — Architecture Document
 **Version:** 1.7
 **Date:** 2026-05-11
-**Status:** APPROVED ✅ — updated to reflect the implemented app at Phase 3 closeout.
+**Status:** APPROVED ✅ — updated to reflect the implemented app at Phase 4 closeout.
 
 ## 0. CURRENT STATE AND NEXT PHASE
 
-**Current implementation state:** The app now supports working anonymous insert, authenticated reads, owner delete, public photo storage, add-photo preview, full-screen photo viewing, realtime inserts, offline cached pin viewing, and the final wrapped single-world map behavior. The major live blockers found during manual verification were fixed.
+**Current implementation state:** The app now supports working anonymous insert, authenticated reads, owner delete, public photo storage, add-photo preview, full-screen photo viewing, realtime inserts, offline cached pin viewing, the final wrapped single-world map behavior, and a live GitHub Pages deployment. The major live blockers found during manual verification were fixed.
 
-**Current phase status:** Phase 3 verification is complete.
+**Current phase status:** Phase 4 Security Review is complete with accepted family-use risk.
 
-**Next active phase:** None by default. Phase 4 Security Review is pending explicit approval.
+**Next active phase:** Phase 5 traceability and delivery closeout.
 
 ---
 
@@ -21,7 +21,7 @@
 | Markup | HTML | 5 |
 | Styling | CSS | 3 |
 | Logic | JavaScript | ES2020 (no transpilation) |
-| Runtime | Browser-native | No Node.js |
+| Runtime | Browser-native | No Node.js at runtime; Node/npm used only for local verification |
 
 ### External Libraries (CDN, pinned versions)
 | Library | Version | Purpose | CDN URL |

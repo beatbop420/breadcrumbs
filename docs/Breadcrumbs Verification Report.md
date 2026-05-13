@@ -42,6 +42,7 @@
 - Saved photos open full-screen and show the full image instead of cropping it.
 - Offline refresh now works for already-loaded pins, and the splash button still works offline.
 - The map now keeps the wrapped drag behavior without showing the repeat sliver at max zoom-out.
+- The live GitHub Pages site loads correctly after the public runtime-config fix.
 
 ---
 
@@ -106,3 +107,6 @@ Blunt version:
 - the remaining items are known exceptions, deployment work, or environment-limited checks
 
 Phase 4 Security Review has **not** started.
+
+Current live site:
+- `https://beatbop420.github.io/breadcrumbs/`

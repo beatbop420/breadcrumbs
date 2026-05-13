@@ -3,6 +3,8 @@
 **Date:** 2026-05-11
 **Status:** BASELINE SPEC — Verification is complete against this baseline, but not every item passed exactly as written. See the Verification Report for final pass/fail/exception results.
 
+**Current implementation note:** The app is now deployed on GitHub Pages at `https://beatbop420.github.io/breadcrumbs/`, and the live build uses Carto Voyager tiles, inline public Supabase config, and offline caching after the device has loaded the site once online.
+
 ---
 
 ## 1. FUNCTIONAL REQUIREMENTS

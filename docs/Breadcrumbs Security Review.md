@@ -118,6 +118,9 @@ Plain-English consequence:
 - a determined bad actor inside that group could still fake a name or bypass the UI
 - this is waived for the current use case and must be revisited before any wider rollout
 
+Current live site:
+- `https://beatbop420.github.io/breadcrumbs/`
+
 ---
 
 ## Current Phase 4 State

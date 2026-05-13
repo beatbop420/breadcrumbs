@@ -1,5 +1,5 @@
 # Breadcrumbs — Final Review
-**Date:** 2026-05-11
+**Date:** 2026-05-12
 **Status:** READY FOR CONTINUED USE
 
 ## 1. Scope Check
@@ -12,6 +12,8 @@ Completed:
 - Restored photo upload flow
 - Added photo-selected feedback and preview
 - Added full-screen photo viewing
+- Published the live GitHub Pages site
+- Confirmed offline use after first online load on a device
 - Updated project documents
 
 Not added:
@@ -30,6 +32,7 @@ Not added:
 | Validation | `js/data.js` | manual blank-place test, `data.test.js` |
 | Marker animation | `js/map.js` | manual retest, `map.test.js` |
 | Photo preview/lightbox | `index.html`, `css/style.css`, `js/ui.js` | targeted automated checks; browser retest still recommended |
+| Live deployment | `index.html`, GitHub Pages settings | live URL open test |
 
 ## 3. Consistency Check
 
@@ -43,3 +46,4 @@ Not added:
 - Manual confirm of the latest preview/lightbox UX after hard refresh
 - Optional second-device realtime check
 - Optional future feature: geocoding/search so typed place names can set coordinates
+- Optional live mobile install check on iPhone Safari and Android Chrome
