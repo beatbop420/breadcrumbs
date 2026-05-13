@@ -119,6 +119,49 @@ function animatePinEntrance(marker) {
   }, { once: true });
 }
 
+function animatePinDelete(marker) {
+  return new Promise((resolve) => {
+    const iconElement = marker.getElement();
+    if (!iconElement) { resolve(); return; }
+
+    const pinDot = iconElement.firstElementChild || iconElement;
+    const rect = iconElement.getBoundingClientRect();
+    const targetX = rect.left + rect.width / 2;
+    const targetY = rect.top + rect.height / 2;
+
+    const bird = document.createElement('div');
+    bird.textContent = '🐦';
+    bird.style.cssText = [
+      'position:fixed',
+      `left:-40px`,
+      `top:${targetY - 11}px`,
+      'font-size:22px',
+      'line-height:1',
+      'z-index:9999',
+      'pointer-events:none',
+      'transition:left 0.45s ease-in',
+    ].join(';');
+    document.body.appendChild(bird);
+
+    void bird.offsetWidth;
+    bird.style.left = `${targetX - 11}px`;
+
+    bird.addEventListener('transitionend', () => {
+      pinDot.style.transition = 'transform 0.1s ease, opacity 0.1s ease';
+      pinDot.style.transform = 'scale(0)';
+      pinDot.style.opacity = '0';
+
+      bird.style.transition = 'left 0.35s ease-in';
+      bird.style.left = `${window.innerWidth + 40}px`;
+
+      bird.addEventListener('transitionend', () => {
+        bird.remove();
+        resolve();
+      }, { once: true });
+    }, { once: true });
+  });
+}
+
 function getMapCenter() {
   if (!mapInstance) return { lat: 20, lng: 0 };
   const center = mapInstance.getCenter();
@@ -134,5 +177,6 @@ export {
   removeTemporaryMarker,
   moveTemporaryMarker,
   animatePinEntrance,
+  animatePinDelete,
   getMapCenter,
 };

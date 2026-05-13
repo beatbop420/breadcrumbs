@@ -3,7 +3,7 @@ import { resolveSupabaseConfig } from './config.js';
 import { readCachedPins, saveCachedPins, upsertCachedPin, removeCachedPin, readCachedSeenPinIds, saveCachedSeenPinIds } from './offlineCache.js';
 import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
 import { getStoredUsername, saveUsername, hasStoredUsername } from './username.js';
-import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, moveTemporaryMarker, animatePinEntrance, getMapCenter } from './map.js';
+import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, moveTemporaryMarker, animatePinEntrance, animatePinDelete, getMapCenter } from './map.js';
 import { showToast, showSplash, hideSplash, showUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters, setActiveUsernameDisplay } from './ui.js';
 
 const pinMarkers = new Map();
@@ -99,15 +99,15 @@ function initFab() {
 
 function buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath) {
   if (submitStage === 'upload') {
-    return 'Photo got lost on the trail. Choose it again and tap Leave Your Crumb.';
+    return 'Photo didn\'t make it. Choose it again and tap Leave Your Crumb.';
   }
 
   if (submitStage === 'insert' && hadSelectedPhoto && uploadedImagePath) {
-    return 'Your crumb got lost in the woods. Choose the photo again and tap Leave Your Crumb.';
+    return 'Your crumb didn\'t make it. Choose the photo again and tap Leave Your Crumb.';
   }
 
   if (submitStage === 'insert') {
-    return 'Your crumb got lost in the woods. Try again.';
+    return 'Your crumb didn\'t make it. Try again.';
   }
 
   return 'Something went wrong. Please refresh and try again.';
@@ -189,18 +189,20 @@ async function handlePinDelete(pin) {
       throw deleteErr;
     }
 
+    removeCachedPin(pin.id);
+    hideViewModal();
+
     const marker = pinMarkers.get(pin.id);
     if (marker) {
-      marker.remove();
       pinMarkers.delete(pin.id);
+      await animatePinDelete(marker);
+      marker.remove();
     }
-    removeCachedPin(pin.id);
 
-    hideViewModal();
-    showToast('Crumb gone.', 'success');
+    showToast('Gone without a crumb.', 'success');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinDelete failed:', err);
-    showToast('Couldn\'t delete this memory. Please try again.', 'error');
+    showToast('Couldn\'t delete this crumb. Please try again.', 'error');
   }
 }
 
@@ -261,7 +263,7 @@ async function loadAndRenderPins() {
       console.info(`[Breadcrumbs] Loaded ${cachedPins.length} cached pins`);
       return;
     }
-    showToast('Lost in the woods. Please refresh.', 'error');
+    showToast('Something went wrong. Please refresh.', 'error');
   }
 }
 
