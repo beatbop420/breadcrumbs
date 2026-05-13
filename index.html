@@ -83,10 +83,10 @@
         <label class="label" for="add-submitted-by">Your Name</label>
         <input id="add-submitted-by" class="input" type="text" placeholder="Your name" maxlength="100" readonly aria-readonly="true" />
 
-        <label class="label" for="add-photo">Photo</label>
-        <button type="button" id="add-photo-trigger" class="upload-btn">
+        <span class="label">Photo</span>
+        <label for="add-photo" id="add-photo-trigger" class="upload-btn">
           <span id="add-photo-label">Choose a photo</span>
-        </button>
+        </label>
         <input id="add-photo" type="file" accept="image/*" class="upload-input" />
         <p id="add-photo-status" class="upload-status">No photo selected</p>
         <div id="add-photo-preview-wrap" class="photo-preview hidden">
