@@ -263,6 +263,9 @@ function initializeAddPinForm() {
 
   const form = document.getElementById('add-pin-form');
   const photoInput = document.getElementById('add-photo');
+  const photoTrigger = document.getElementById('add-photo-trigger');
+
+  photoTrigger.addEventListener('click', () => photoInput.click());
 
   photoInput.addEventListener('change', () => {
     syncAddPhotoSelection();
