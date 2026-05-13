@@ -129,30 +129,33 @@ function animatePinDelete(marker) {
     const targetX = rect.left + rect.width / 2;
     const targetY = rect.top + rect.height / 2;
 
-    const bird = document.createElement('div');
-    bird.textContent = '🐦';
+    const CROW_W = 110;
+    const CROW_H = 60;
+
+    const bird = document.createElement('img');
+    bird.src = 'assets/crow-swoop.png';
     bird.style.cssText = [
       'position:fixed',
-      `left:-40px`,
-      `top:${targetY - 11}px`,
-      'font-size:22px',
-      'line-height:1',
+      `left:-${CROW_W}px`,
+      `top:${targetY - CROW_H / 2}px`,
+      `width:${CROW_W}px`,
+      `height:${CROW_H}px`,
       'z-index:9999',
       'pointer-events:none',
-      'transition:left 0.45s ease-in',
+      'transition:left 0.5s ease-in',
     ].join(';');
     document.body.appendChild(bird);
 
     void bird.offsetWidth;
-    bird.style.left = `${targetX - 11}px`;
+    bird.style.left = `${targetX - CROW_W / 2}px`;
 
     bird.addEventListener('transitionend', () => {
       pinDot.style.transition = 'transform 0.1s ease, opacity 0.1s ease';
       pinDot.style.transform = 'scale(0)';
       pinDot.style.opacity = '0';
 
-      bird.style.transition = 'left 0.35s ease-in';
-      bird.style.left = `${window.innerWidth + 40}px`;
+      bird.style.transition = 'left 0.4s ease-in';
+      bird.style.left = `${window.innerWidth + CROW_W}px`;
 
       bird.addEventListener('transitionend', () => {
         bird.remove();

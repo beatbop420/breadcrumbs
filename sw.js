@@ -1,4 +1,4 @@
-const CACHE_NAME = 'breadcrumbs-v5';
+const CACHE_NAME = 'breadcrumbs-v6';
 const STATIC_ASSETS = [
   '/breadcrumbs/',
   '/breadcrumbs/index.html',
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
   '/breadcrumbs/manifest.json',
   '/breadcrumbs/assets/pin-placeholder.svg',
   '/breadcrumbs/assets/icon.svg',
+  '/breadcrumbs/assets/crow-swoop.png',
 ];
 
 self.addEventListener('install', (event) => {
