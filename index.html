@@ -84,10 +84,10 @@
         <input id="add-submitted-by" class="input" type="text" placeholder="Your name" maxlength="100" readonly aria-readonly="true" />
 
         <span class="label">Photo</span>
-        <label for="add-photo" id="add-photo-trigger" class="upload-btn">
+        <label id="add-photo-trigger" class="upload-btn">
           <span id="add-photo-label">Choose a photo</span>
+          <input id="add-photo" type="file" accept="image/*" class="upload-input" />
         </label>
-        <input id="add-photo" type="file" accept="image/*" class="upload-input" />
         <p id="add-photo-status" class="upload-status">No photo selected</p>
         <div id="add-photo-preview-wrap" class="photo-preview hidden">
           <img id="add-photo-preview" class="photo-preview__image" src="" alt="Selected photo preview" />
