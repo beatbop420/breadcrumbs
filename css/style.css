@@ -157,7 +157,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 .modal {
   background: var(--color-cream);
   border-radius: var(--radius) var(--radius) 0 0;
-  padding: 24px;
+  padding: 16px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -176,7 +176,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .modal__title {
@@ -197,7 +197,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--color-brown);
-  margin: 16px 0 6px;
+  margin: 10px 0 4px;
 }
 
 .required { color: var(--color-rose); }
@@ -226,7 +226,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   cursor: default;
 }
 
-.input--textarea { resize: vertical; min-height: 100px; }
+.input--textarea { resize: vertical; min-height: 64px; }
 
 .char-counter {
   display: block;
@@ -317,7 +317,7 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 .btn--primary:hover { opacity: 0.88; }
 .btn--danger { background: var(--color-rose); color: var(--color-white); }
 .btn--danger:hover { opacity: 0.88; }
-.btn--full { width: 100%; margin-top: 20px; }
+.btn--full { width: 100%; margin-top: 12px; }
 
 .btn-icon {
   display: flex;

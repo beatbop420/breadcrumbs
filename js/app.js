@@ -73,10 +73,16 @@ function openAddModal(latlng) {
     await handlePinSubmit(cleanData, tempMarker);
   });
 
-  const closeButton = document.getElementById('add-close');
-  closeButton.onclick = () => {
+  function closeModal() {
     removeTemporaryMarker(tempMarker);
     hideAddModal();
+  }
+
+  document.getElementById('add-close').onclick = closeModal;
+
+  const backdrop = document.getElementById('modal-add');
+  backdrop.onclick = (event) => {
+    if (event.target === backdrop) closeModal();
   };
 }
 
