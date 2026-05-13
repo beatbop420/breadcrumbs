@@ -293,16 +293,26 @@ function initializeAddPinForm() {
   });
 }
 
-function showAddModal(latlng, prefillUsername, onSubmit) {
+function showAddModal(latlng, prefillUsername, onSubmit, existingPin = null) {
   initializeAddPinForm();
   addPinSubmitHandler = onSubmit;
 
   const addPinForm = document.getElementById('add-pin-form');
   addPinForm.reset();
 
+  const isEdit = Boolean(existingPin);
+  document.querySelector('#modal-add .modal__title').textContent = isEdit ? 'Edit Memory' : 'Drop a Crumb';
+  document.getElementById('add-submit-btn').textContent = isEdit ? 'Save Changes' : 'Save Memory';
+
   document.getElementById('add-lat').value = latlng.lat;
   document.getElementById('add-lng').value = latlng.lng;
   document.getElementById('add-submitted-by').value = prefillUsername || '';
+
+  if (isEdit) {
+    document.getElementById('add-place-name').value = existingPin.placeName || '';
+    document.getElementById('add-note').value = existingPin.note || '';
+  }
+
   clearAddPhotoInput();
   setElementText('add-error', '');
   syncAddModalCounters();
@@ -380,6 +390,15 @@ function showViewModal(safePin, viewOptions = {}) {
     photoElement.onclick = () => showPhotoLightbox(safePin.photoUrl, `Photo from ${safePin.placeName}`);
   }
 
+  const editButton = document.getElementById('view-edit');
+  editButton.onclick = null;
+  if (viewOptions.canEdit) {
+    editButton.classList.remove('hidden');
+    editButton.onclick = viewOptions.onEdit;
+  } else {
+    editButton.classList.add('hidden');
+  }
+
   const deleteButton = document.getElementById('view-delete');
   deleteButton.onclick = null;
   if (viewOptions.canDelete) {
@@ -393,6 +412,8 @@ function showViewModal(safePin, viewOptions = {}) {
 }
 
 function hideViewModal() {
+  document.getElementById('view-edit').onclick = null;
+  document.getElementById('view-edit').classList.add('hidden');
   const deleteButton = document.getElementById('view-delete');
   deleteButton.onclick = null;
   deleteButton.classList.add('hidden');

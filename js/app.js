@@ -1,4 +1,4 @@
-import { createSupabaseClient, ensureAnonymousSession, fetchAllPins, ensureAccount, insertPin, fetchSeenPinIds, insertView, uploadPhoto, downloadPhoto, restorePhoto, deletePhoto, deletePin, subscribeToNewPins } from './supabase.js';
+import { createSupabaseClient, ensureAnonymousSession, fetchAllPins, ensureAccount, insertPin, updatePin, fetchSeenPinIds, insertView, uploadPhoto, downloadPhoto, restorePhoto, deletePhoto, deletePin, subscribeToNewPins } from './supabase.js';
 import { resolveSupabaseConfig } from './config.js';
 import { readCachedPins, saveCachedPins, upsertCachedPin, removeCachedPin, readCachedSeenPinIds, saveCachedSeenPinIds } from './offlineCache.js';
 import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
@@ -213,12 +213,71 @@ async function handlePinDelete(pin) {
   }
 }
 
+async function handlePinEdit(pin) {
+  hideViewModal();
+  const latlng = { lat: pin.lat, lng: pin.lng };
+  const tempMarker = addTemporaryMarker(latlng);
+
+  showAddModal(latlng, currentUsername, async (cleanData) => {
+    setAddModalSubmitting(true);
+    try {
+      await ensureAnonymousSession();
+
+      let imagePath = pin.image_path || null;
+
+      if (cleanData.photo) {
+        const storagePath = buildStoragePath(cleanData.photo);
+        imagePath = await uploadPhoto(cleanData.photo, storagePath);
+        if (pin.image_path) await deletePhoto(pin.image_path).catch(() => {});
+      }
+
+      const updates = {
+        place_name: cleanData.placeName,
+        note: cleanData.note || null,
+        image_path: imagePath,
+      };
+
+      const updatedPin = await updatePin(pin.id, updates, currentUsername);
+      removeTemporaryMarker(tempMarker);
+      hideAddModal();
+
+      const marker = pinMarkers.get(pin.id);
+      if (marker) {
+        marker.remove();
+        pinMarkers.delete(pin.id);
+        const newMarker = renderPinMarker(updatedPin, seenPinSet, handlePinClick);
+        pinMarkers.set(updatedPin.id, newMarker);
+      }
+
+      showToast('Bread successfully deployed.', 'success');
+    } catch (err) {
+      console.error('[Breadcrumbs] handlePinEdit failed:', err);
+      setAddModalSubmitting(false);
+      showAddModalSubmitError('Couldn\'t save changes. Please try again.');
+    }
+  }, pin);
+
+  document.getElementById('add-close').onclick = () => {
+    removeTemporaryMarker(tempMarker);
+    hideAddModal();
+  };
+  const backdrop = document.getElementById('modal-add');
+  backdrop.onclick = (event) => {
+    if (event.target === backdrop) { removeTemporaryMarker(tempMarker); hideAddModal(); }
+  };
+}
+
 async function handlePinClick(pin) {
   const safePin = buildSafePinHtml(pin, runtimeConfig.supabaseUrl);
+  const canOwn = isPinOwner(pin, currentUsername);
   showViewModal(safePin, {
-    canDelete: isPinOwner(pin, currentUsername),
+    canDelete: canOwn,
+    canEdit: canOwn,
     onDelete: async () => {
       await handlePinDelete(pin);
+    },
+    onEdit: async () => {
+      await handlePinEdit(pin);
     },
   });
 

@@ -131,6 +131,21 @@ async function deletePhoto(storagePath) {
   if (error) throw new Error(`[Breadcrumbs] deletePhoto failed: ${error.message}`);
 }
 
+async function updatePin(pinId, updates, ownerName) {
+  const client = getClient();
+  const { data: updatedRows, error } = await client
+    .from('pins')
+    .update(updates)
+    .eq('id', pinId)
+    .ilike('owner_name', ownerName)
+    .select('*');
+  if (error) throw new Error(`[Breadcrumbs] updatePin failed: ${error.message}`);
+  if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+    throw new Error('[Breadcrumbs] updatePin failed: pin not found for this owner.');
+  }
+  return updatedRows[0];
+}
+
 async function deletePin(pinId, ownerName) {
   const client = getClient();
   const { data: deletedPinRows, error } = await client
@@ -178,6 +193,7 @@ export {
   downloadPhoto,
   restorePhoto,
   deletePhoto,
+  updatePin,
   deletePin,
   subscribeToNewPins,
 };

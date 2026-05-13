@@ -318,6 +318,8 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 .btn--primary:hover { opacity: 0.88; }
 .btn--danger { background: var(--color-rose); color: var(--color-white); }
 .btn--danger:hover { opacity: 0.88; }
+.btn--secondary { background: transparent; color: var(--color-brown); border: 1.5px solid var(--color-brown-mid); }
+.btn--secondary:hover { background: rgba(61, 43, 31, 0.06); }
 .btn--full { width: 100%; margin-top: 12px; }
 
 .btn-icon {
