@@ -143,37 +143,23 @@ function animatePinDelete(marker) {
       'z-index:9999',
       'pointer-events:none',
       'transform-origin:center center',
-      'transition:left 0.25s ease-out',
+      'transition:left 0.4s linear',
     ].join(';');
     document.body.appendChild(bird);
 
     void bird.offsetWidth;
-    bird.style.left = `${targetX - CROW_W / 2}px`;
+    bird.style.left = `${window.innerWidth + CROW_W}px`;
 
-    // Phase 1 done: crow arrived — now it looks at you
+    // grab the pin as it passes through
+    setTimeout(() => {
+      pinDot.style.transition = 'transform 0.1s ease, opacity 0.1s ease';
+      pinDot.style.transform = 'scale(0)';
+      pinDot.style.opacity = '0';
+    }, 200);
+
     bird.addEventListener('transitionend', () => {
-      bird.style.transition = 'transform 0.18s ease-out';
-      bird.style.transform = 'scale(1.5)';
-
-      // Phase 2: looked at you — now looks back and grabs
-      setTimeout(() => {
-        bird.style.transition = 'transform 0.15s ease-in';
-        bird.style.transform = 'scale(1.0)';
-
-        pinDot.style.transition = 'transform 0.12s ease, opacity 0.12s ease';
-        pinDot.style.transform = 'scale(0)';
-        pinDot.style.opacity = '0';
-
-        // Phase 3: GONE
-        setTimeout(() => {
-          bird.style.transition = 'left 0.18s ease-in';
-          bird.style.left = `${window.innerWidth + CROW_W}px`;
-          bird.addEventListener('transitionend', () => {
-            bird.remove();
-            resolve();
-          }, { once: true });
-        }, 150);
-      }, 220);
+      bird.remove();
+      resolve();
     }, { once: true });
   });
 }
