@@ -1,4 +1,4 @@
-import { createSupabaseClient, signInAnonymously, fetchAllPins, ensureAccount, insertPin, fetchSeenPinIds, insertView, uploadPhoto, downloadPhoto, restorePhoto, deletePhoto, deletePin, subscribeToNewPins } from './supabase.js';
+import { createSupabaseClient, ensureAnonymousSession, fetchAllPins, ensureAccount, insertPin, fetchSeenPinIds, insertView, uploadPhoto, downloadPhoto, restorePhoto, deletePhoto, deletePin, subscribeToNewPins } from './supabase.js';
 import { resolveSupabaseConfig } from './config.js';
 import { readCachedPins, saveCachedPins, upsertCachedPin, removeCachedPin, readCachedSeenPinIds, saveCachedSeenPinIds } from './offlineCache.js';
 import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
@@ -55,7 +55,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
   let uploadedImagePath = null;
 
   try {
-    await signInAnonymously();
+    await ensureAnonymousSession();
     if (hadSelectedPhoto) {
       submitStage = 'upload';
       const storagePath = buildStoragePath(cleanData.photo);
@@ -93,7 +93,7 @@ async function handlePinDelete(pin) {
   if (!didConfirmDelete) return;
 
   try {
-    await signInAnonymously();
+    await ensureAnonymousSession();
     let photoBackup = null;
 
     if (pin.image_path) {
@@ -146,6 +146,7 @@ async function handlePinClick(pin) {
   if (seenPinSet.has(pin.id)) return;
 
   try {
+    await ensureAnonymousSession();
     await insertView(currentUsername, pin.id);
     seenPinSet.add(pin.id);
     saveCachedSeenPinIds(currentUsername, seenPinSet);

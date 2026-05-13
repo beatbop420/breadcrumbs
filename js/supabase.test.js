@@ -4,6 +4,7 @@ import {
   getClient,
   setClientForTesting,
   signInAnonymously,
+  ensureAnonymousSession,
   fetchAllPins,
   fetchAccountByName,
   createAccount,
@@ -36,17 +37,31 @@ function buildMockClient({
   deletePinError = null,
   deletedPinsData = [{ id: 'pin-1', owner_name: 'Sofia', image_path: 'abc.jpg' }],
   authError = null,
+  existingSession = null,
+  getSessionError = null,
+  authCallLog = [],
   uploadCalls = [],
   accountFilterCalls = [],
   deleteFilterCalls = [],
 } = {}) {
   return {
     auth: {
-      signInAnonymously: () => Promise.resolve(
-        authError
-          ? { data: null, error: { message: authError } }
-          : { data: { session: { access_token: 'test-token' } }, error: null }
-      ),
+      signInAnonymously: () => {
+        authCallLog.push('signInAnonymously');
+        return Promise.resolve(
+          authError
+            ? { data: null, error: { message: authError } }
+            : { data: { session: { access_token: 'test-token' } }, error: null }
+        );
+      },
+      getSession: () => {
+        authCallLog.push('getSession');
+        return Promise.resolve(
+          getSessionError
+            ? { data: null, error: { message: getSessionError } }
+            : { data: { session: existingSession }, error: null }
+        );
+      },
     },
     from: (tableName) => ({
       select: (cols) => ({
@@ -169,6 +184,26 @@ setClientForTesting(buildMockClient({ authError: 'Auth failed' }));
 let authErr = null;
 try { await signInAnonymously(); } catch (err) { authErr = err.message; }
 expect('signInAnonymously throws on auth error', authErr !== null, true);
+
+const existingSessionCallLog = [];
+setClientForTesting(buildMockClient({
+  existingSession: { access_token: 'existing-token' },
+  authCallLog: existingSessionCallLog,
+}));
+const existingSession = await ensureAnonymousSession();
+expect('ensureAnonymousSession returns an existing session without re-signing', existingSession.access_token, 'existing-token');
+expect('ensureAnonymousSession avoids an extra anonymous sign-in when a session exists', existingSessionCallLog.includes('signInAnonymously'), false);
+
+const fallbackSessionCallLog = [];
+setClientForTesting(buildMockClient({ authCallLog: fallbackSessionCallLog }));
+const fallbackSession = await ensureAnonymousSession();
+expect('ensureAnonymousSession signs in when no session exists', fallbackSession.access_token, 'test-token');
+expect('ensureAnonymousSession checks session state first', fallbackSessionCallLog[0], 'getSession');
+
+setClientForTesting(buildMockClient({ getSessionError: 'Session lookup failed' }));
+let getSessionErr = null;
+try { await ensureAnonymousSession(); } catch (err) { getSessionErr = err.message; }
+expect('ensureAnonymousSession throws when session lookup fails', getSessionErr !== null, true);
 
 // ─── fetchAllPins ─────────────────────────────────────────────────────────────
 

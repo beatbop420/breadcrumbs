@@ -23,6 +23,18 @@ async function signInAnonymously() {
   return sessionData.session;
 }
 
+async function ensureAnonymousSession() {
+  const client = getClient();
+
+  if (typeof client.auth?.getSession === 'function') {
+    const { data: sessionData, error } = await client.auth.getSession();
+    if (error) throw new Error(`[Breadcrumbs] getSession failed: ${error.message}`);
+    if (sessionData?.session) return sessionData.session;
+  }
+
+  return signInAnonymously();
+}
+
 async function fetchAllPins() {
   const client = getClient();
   const { data: pinRows, error } = await client.from('pins').select('*');
@@ -154,6 +166,7 @@ export {
   getClient,
   setClientForTesting,
   signInAnonymously,
+  ensureAnonymousSession,
   fetchAllPins,
   fetchAccountByName,
   createAccount,
