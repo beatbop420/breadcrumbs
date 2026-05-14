@@ -1,6 +1,6 @@
 # Breadcrumbs
 
-Breadcrumbs is a small family memory map app. It shows a world map, lets a user drop a pin on a clicked location, attach a short note and optional photo, and save it to Supabase. Saved memories can be opened later, marked as seen, deleted by their owner, and viewed in a full-screen photo viewer when a real photo exists. The live site is published on GitHub Pages and can still open offline on a device after that device has loaded it once online.
+Breadcrumbs is a small family memory map app. It shows a world map, lets a user drop a pin, attach a short note and optional photo, and save it to Supabase. Typed place names can also trigger best-effort geocoding that moves the temporary marker while the user is filling out the form. Saved memories can be opened later, marked as seen, edited by their owner, deleted by their owner in the UI, and viewed in a full-screen photo viewer when a real photo exists. The live site is published on GitHub Pages and can still open offline on a device after that device has loaded it once online.
 
 ## Live Site
 
@@ -38,6 +38,7 @@ npm test
 npm run check:syntax
 npm run lint
 npm run security:check
+npm run audit:deps
 ```
 
 ## Deploy
@@ -64,7 +65,7 @@ For local testing, the same values can be provided in `js/config.local.js`.
 ## Known Limitations
 
 - Ownership is name-based and trust-based, which is fine for a small family group but not for hostile users.
-- The typed place name is just a label. The pin still goes where the map is clicked.
+- The typed place name can move the temporary marker through best-effort geocoding. It is not guaranteed and depends on network availability.
 - The public site needs one online load on a device before offline caching is useful on that device.
 - Legacy pins are not verifiable in the live database right now because there are no `is_legacy = true` rows present.
 - Android Chrome installability was not fully verified from this laptop/Firefox workflow.

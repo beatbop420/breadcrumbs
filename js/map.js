@@ -126,7 +126,6 @@ function animatePinDelete(marker) {
 
     const pinDot = iconElement.firstElementChild || iconElement;
     const rect = iconElement.getBoundingClientRect();
-    const targetX = rect.left + rect.width / 2;
     const targetY = rect.top + rect.height / 2;
 
     const CROW_W = 110;

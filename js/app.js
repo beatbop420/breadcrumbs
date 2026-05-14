@@ -213,6 +213,56 @@ async function handlePinDelete(pin) {
   }
 }
 
+async function updatePinWithOptionalPhotoReplacement({
+  pin,
+  cleanData,
+  currentUsername,
+  ensureAnonymousSessionFn = ensureAnonymousSession,
+  buildStoragePathFn = buildStoragePath,
+  uploadPhotoFn = uploadPhoto,
+  updatePinFn = updatePin,
+  deletePhotoFn = deletePhoto,
+}) {
+  await ensureAnonymousSessionFn();
+
+  const previousImagePath = pin.image_path || null;
+  let nextImagePath = previousImagePath;
+  let uploadedReplacementPath = null;
+
+  if (cleanData.photo) {
+    const storagePath = buildStoragePathFn(cleanData.photo);
+    uploadedReplacementPath = await uploadPhotoFn(cleanData.photo, storagePath);
+    nextImagePath = uploadedReplacementPath;
+  }
+
+  try {
+    const updatedPin = await updatePinFn(pin.id, {
+      place_name: cleanData.placeName,
+      note: cleanData.note || null,
+      image_path: nextImagePath,
+    }, currentUsername);
+
+    if (uploadedReplacementPath && previousImagePath) {
+      try {
+        await deletePhotoFn(previousImagePath);
+      } catch (err) {
+        console.error('[Breadcrumbs] deletePhoto after successful edit failed:', err);
+      }
+    }
+
+    return updatedPin;
+  } catch (err) {
+    if (uploadedReplacementPath) {
+      try {
+        await deletePhotoFn(uploadedReplacementPath);
+      } catch (cleanupErr) {
+        console.error('[Breadcrumbs] deletePhoto cleanup after edit failure failed:', cleanupErr);
+      }
+    }
+    throw err;
+  }
+}
+
 async function handlePinEdit(pin) {
   hideViewModal();
   const latlng = { lat: pin.lat, lng: pin.lng };
@@ -221,23 +271,11 @@ async function handlePinEdit(pin) {
   showAddModal(latlng, currentUsername, async (cleanData) => {
     setAddModalSubmitting(true);
     try {
-      await ensureAnonymousSession();
-
-      let imagePath = pin.image_path || null;
-
-      if (cleanData.photo) {
-        const storagePath = buildStoragePath(cleanData.photo);
-        imagePath = await uploadPhoto(cleanData.photo, storagePath);
-        if (pin.image_path) await deletePhoto(pin.image_path).catch(() => {});
-      }
-
-      const updates = {
-        place_name: cleanData.placeName,
-        note: cleanData.note || null,
-        image_path: imagePath,
-      };
-
-      const updatedPin = await updatePin(pin.id, updates, currentUsername);
+      const updatedPin = await updatePinWithOptionalPhotoReplacement({
+        pin,
+        cleanData,
+        currentUsername,
+      });
       removeTemporaryMarker(tempMarker);
       hideAddModal();
 
@@ -393,3 +431,7 @@ async function initApp() {
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
+
+export {
+  updatePinWithOptionalPhotoReplacement,
+};

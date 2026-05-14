@@ -1,323 +1,106 @@
 # Breadcrumbs — Architecture Document
-**Version:** 1.7
-**Date:** 2026-05-11
-**Status:** APPROVED ✅ — updated to reflect the implemented app at Phase 4 closeout.
+**Date:** 2026-05-13
+**Status:** APPROVED
 
-## 0. CURRENT STATE AND NEXT PHASE
+## 1. Purpose
 
-**Current implementation state:** The app now supports working anonymous insert, authenticated reads, owner delete, public photo storage, add-photo preview, full-screen photo viewing, realtime inserts, offline cached pin viewing, the final wrapped single-world map behavior, and a live GitHub Pages deployment. The major live blockers found during manual verification were fixed.
+This document describes the current `breadcrumbs` codebase as it actually exists in the repository and records the verification plan used for this review cycle.
 
-**Current phase status:** Phase 4 Security Review is complete with accepted family-use risk.
+## 2. Current System Summary
 
-**Next active phase:** Phase 5 traceability and delivery closeout.
+`breadcrumbs` is a static single-page web app for saving family memories on a world map.
 
----
+Current implemented behavior:
+- splash screen appears first
+- user enters or reuses a name
+- map loads after the splash is dismissed
+- user can add a pin with note and optional photo
+- typed place names can trigger best-effort geocoding that moves the temporary marker
+- saved pins can be viewed, marked seen, edited by the owner, and deleted by the owner in the UI
+- existing pins can be cached locally for offline reuse after a prior online load
 
-## 1. TECHNOLOGY STACK
+## 3. Runtime Stack
 
-### Runtime & Language
-| Layer | Technology | Version |
-|-------|------------|---------|
-| Markup | HTML | 5 |
-| Styling | CSS | 3 |
-| Logic | JavaScript | ES2020 (no transpilation) |
-| Runtime | Browser-native | No Node.js at runtime; Node/npm used only for local verification |
+| Layer | Technology |
+|---|---|
+| App shell | HTML5 |
+| Styling | CSS3 |
+| Frontend logic | Vanilla JavaScript ES modules |
+| Map | Leaflet 1.9.4 |
+| Tile source | Carto Voyager raster tiles |
+| Backend client | Supabase JS 2.49.1 via CDN |
+| Backend services | Supabase auth, database, storage, realtime |
+| Hosting | GitHub Pages |
+| Offline support | Service Worker + `localStorage` cache |
+| Local verification tooling | Node.js scripts + ESLint |
 
-### External Libraries (CDN, pinned versions)
-| Library | Version | Purpose | CDN URL |
-|---------|---------|---------|---------|
-| Leaflet.js | 1.9.4 | Map rendering + interaction | `https://unpkg.com/leaflet@1.9.4/dist/leaflet.js` |
-| Leaflet CSS | 1.9.4 | Map styles | `https://unpkg.com/leaflet@1.9.4/dist/leaflet.css` |
-| Supabase JS | 2.49.1 | Database, auth, storage, realtime | `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js` |
-| Google Fonts | N/A | Playfair Display (headings), Inter (body) | `https://fonts.googleapis.com/css2?family=Playfair+Display&family=Inter` |
+## 4. Main Modules
 
-### Backend Services
-| Service | Provider | Plan | Purpose |
-|---------|----------|------|---------|
-| Database | Supabase | Free | `pins` + `views` tables, RLS, Realtime |
-| Storage | Supabase | Free | Photo uploads, public bucket `pins` |
-| Auth | Supabase | Free | Anonymous sessions |
-| Hosting | GitHub Pages | Free | Static file delivery |
+| File | Responsibility |
+|---|---|
+| [index.html](/home/petra/Desktop/breadcrumbs/index.html:1) | App shell, DOM structure, CDN imports, inline public runtime config, service-worker registration |
+| [js/app.js](/home/petra/Desktop/breadcrumbs/js/app.js:1) | Startup orchestration, username flow, geocoding, add/view/edit/delete flows, offline fallback, realtime |
+| [js/ui.js](/home/petra/Desktop/breadcrumbs/js/ui.js:1) | Splash, username prompt, add/view modals, photo preview, lightbox, toast, counters |
+| [js/map.js](/home/petra/Desktop/breadcrumbs/js/map.js:1) | Leaflet setup, markers, temporary marker, map animations |
+| [js/data.js](/home/petra/Desktop/breadcrumbs/js/data.js:1) | Validation and sanitization rules |
+| [js/pinLogic.js](/home/petra/Desktop/breadcrumbs/js/pinLogic.js:1) | Owner checks, safe display shaping, storage paths, photo URLs, pin colors |
+| [js/supabase.js](/home/petra/Desktop/breadcrumbs/js/supabase.js:1) | Supabase auth, queries, storage actions, realtime subscription |
+| [js/offlineCache.js](/home/petra/Desktop/breadcrumbs/js/offlineCache.js:1) | Cached pins and seen-pin storage |
+| [js/username.js](/home/petra/Desktop/breadcrumbs/js/username.js:1) | Saved-name persistence |
+| [sw.js](/home/petra/Desktop/breadcrumbs/sw.js:1) | Static asset caching and network/cache strategy |
 
-### Tile Layer
-- **Provider:** CartoDB Voyager
-- **URL template:** `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png`
-- **Attribution required:** CartoDB + OpenStreetMap contributors
+## 5. Data And Trust Boundaries
 
----
+Browser-local state:
+- saved username
+- cached pins
+- cached seen-pin ids
+- optional stored runtime config for testing
 
-## 2. MODULE STRUCTURE
+Remote dependencies:
+- Supabase database
+- Supabase storage bucket `pins`
+- Supabase anonymous auth
+- Supabase realtime
+- Carto map tiles
+- Nominatim geocoding
+- CDN-hosted Leaflet and Supabase JS
 
-### File Tree
-```
-/
-├── package.json              — Local verification command definitions
-├── package-lock.json         — Pinned verification-tool dependency lockfile
-├── eslint.config.js          — Local lint configuration for verification
-├── index.html               — App shell, loads all dependencies, defines DOM structure
-├── manifest.json            — PWA metadata (name, icons, theme, display mode)
-├── sw.js                    — Service Worker (caching strategy, offline support)
-├── css/
-│   └── style.css            — All visual styles (theme, layout, modals, animations)
-├── js/
-│   ├── data.js              — Data shapes, validation rules, sanitization ✅ BUILT + TESTED
-│   ├── pinLogic.js          — Core pin logic, storage-path helpers, safe display shaping
-│   ├── config.js            — Runtime Supabase config resolution
-│   ├── config.local.js      — Local runtime Supabase config values for testing
-│   ├── supabase.js          — Supabase service layer (auth, queries, storage, realtime)
-│   ├── username.js          — localStorage name/account helper
-│   ├── map.js               — Leaflet map adapter and marker behavior
-│   ├── ui.js                — DOM UI adapter for modals, toast, splash, counters
-│   ├── app.js               — App orchestration layer
-│   ├── config.test.js       — Unit tests for runtime config handling
-│   ├── data.test.js         — Unit tests for validation/sanitization logic
-│   ├── map.test.js          — Unit tests for marker entrance animation behavior
-│   ├── pinLogic.test.js     — Unit tests for core pin logic
-│   ├── supabase.test.js     — Unit tests for Supabase service wrapper
-│   ├── ui.test.js           — Unit tests for splash timing helpers
-│   ├── username.test.js     — Unit tests for username persistence helpers
-│   └── test-runner.js       — Minimal test runner (expect + summarizeResults)
-├── scripts/
-│   ├── run-tests.js         — Test suite launcher
-│   ├── check-syntax.js      — Syntax verification helper
-│   └── security-check.js    — Local security-check helper for verification support
-├── sql/
-│   ├── 2026-05-11-name-ownership-delete.sql — Supabase schema/RLS update for ownership + delete
-│   ├── 2026-05-11-pins-read-authenticated.sql — Allows authenticated anonymous sessions to read pins
-│   └── 2026-05-11-delete-and-storage-fixes.sql — Delete policy, bucket setup, and storage object policies
-└── assets/
-    ├── icon.svg             — PWA icon
-    └── pin-placeholder.svg  — Default image when pin has no photo
-```
+Trust model:
+- identity is based on a saved plain-text name
+- this is acceptable only for a tiny trusted family group
+- it is not strong hostile-user security
 
-### `index.html` — Responsibilities
-- Load CDN scripts: Leaflet, Supabase JS
-- Load Google Fonts via `<link>`
-- Load local runtime config before app boot
-- Load `css/style.css` and `js/app.js`
-- Register Service Worker
-- Define static DOM:
-  - `#splash` — splash overlay div
-  - `#username-prompt` — first-time username modal
-  - `#map` — Leaflet mount target (full viewport)
-  - `#modal-add` — Add Pin modal
-  - `#add-photo-preview-wrap` — inline preview for the selected add-photo file
-  - `#modal-view` — View Pin modal
-  - `#photo-lightbox` — full-screen photo viewer
-  - `#toast` — notification bar for errors/success
+## 6. Current Behavior Notes That Matter For Verification
 
-### Layer Mapping
+- Typed place names are not just labels anymore; geocoding in [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:14) can move the temporary marker.
+- Edit support exists in the current UI and backend flow through [index.html](/home/petra/Desktop/breadcrumbs/index.html:118), [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:266), and [supabase.js](/home/petra/Desktop/breadcrumbs/js/supabase.js:134).
+- Pins are loaded after the splash button is pressed, not behind the splash.
+- Offline behavior relies on both service-worker caching and `localStorage` pin caching.
 
-| Build Layer | Files | Responsibility |
-|-------------|-------|----------------|
-| Data model / validation | `js/data.js` | Input limits, sanitization, validation rules |
-| Core / business logic | `js/pinLogic.js` | Pin state rules, storage-path helpers, display-safe pin shaping |
-| Runtime config | `js/config.js`, `js/config.local.js` | Resolve Supabase base URL and anon key safely at runtime |
-| Service layer | `js/supabase.js`, `js/username.js` | Supabase calls, account/name persistence helpers |
-| API / interface layer | `js/app.js`, `js/map.js` | Submit-flow orchestration, realtime wiring, map interaction |
-| UI layer | `index.html`, `css/style.css`, `js/ui.js` | DOM structure, styling, modal/toast/splash behavior |
+## 7. Verification Plan Used In This Review
 
-### `js/app.js` — Sections & Responsibilities
+Automated checks:
+- `npm test`
+- `node scripts/check-syntax.js`
+- `npm run lint`
+- `node scripts/security-check.js`
+- `npm audit --audit-level=high`
 
-```
-── CONFIG ──────────────────────────────────────────────────────
-  resolveSupabaseConfig()   → { supabaseUrl, supabaseAnonKey }
-    Reads runtime config from local config source instead of hardcoded placeholders.
+High-risk review targets:
+- photo upload and cleanup paths
+- edit flow consistency
+- owner-only actions versus server-side policy reality
+- offline cache behavior
+- document/code drift
 
-── SUPABASE CLIENT ─────────────────────────────────────────────
-  initSupabase()      → SupabaseClient
-    Creates and returns the Supabase client instance.
+## 8. Review Outcome Summary
 
-── USERNAME ────────────────────────────────────────────────────
-  getUsername()        → string | null
-    Reads username from localStorage key `breadcrumbs_username`.
+The architecture review found two meaningful code/document drift areas before verification closed:
+- edit support existed even though older docs still described “no frontend update”
+- typed place names could move the temporary marker even though older docs still described them as label-only
 
-  promptUsername()     → Promise<string>
-    If no active name in localStorage, shows #username-prompt modal.
-    User enters a unique name account or reuses an existing known name.
-    Active name is saved locally for reuse.
-    Auto-fills "submitted by" field in Add Pin modal and acts as ownership identity.
-
-── AUTH ────────────────────────────────────────────────────────
-  ensureAnonSession() → Promise<Session>
-    Calls signInAnonymously() if no active session exists.
-    Called only when user attempts to submit a pin, not on load.
-
-── MAP ─────────────────────────────────────────────────────────
-  initMap()           → LeafletMap
-    Creates full-screen Leaflet map, full world view, CartoDB tiles.
-    Attaches tap handler → openAddModal(latlng).
-
-── PINS ────────────────────────────────────────────────────────
-  loadPins()          → Promise<void>
-    Fetches all rows from `pins` table.
-    Calls renderPin() for each.
-
-  renderPin(pin)      → LeafletMarker
-    Creates marker at pin.lat / pin.lng.
-    Color: bright (unseen) or muted (seen), based on seenPins Set.
-    Attaches click handler → openViewModal(pin).
-
-  canDeletePin(pin, currentUsername) → boolean
-    Returns true only when the active name matches the pin owner name.
-
-  markSeen(pinId)     → Promise<void>
-    Inserts row into `views` table: { username, pin_id }.
-    Unique index silently ignores if already marked seen.
-    Updates marker color to muted immediately.
-
-  loadSeenPins()      → Promise<Set<string>>
-    Fetches all pin_ids from `views` WHERE username = current user.
-    Returns as a Set for fast lookup during pin rendering.
-
-  isUnseen(pinId)     → boolean
-    Returns true if pinId not in the loaded seen Set.
-
-── REALTIME ────────────────────────────────────────────────────
-  subscribeRealtime() → void
-    Subscribes to postgres_changes INSERT on `pins`.
-    On new event: calls renderPin(newPin) — always renders as unseen.
-
-── ADD PIN MODAL ───────────────────────────────────────────────
-  openAddModal(latlng) → void
-    Drops temporary marker at latlng.
-    Populates hidden lat/lng fields.
-    Auto-fills submitted_by from getUsername().
-    Shows #modal-add.
-
-  closeAddModal()      → void
-    Removes temporary marker.
-    Resets and hides #modal-add.
-
-  validateAddForm(formData) → { valid: boolean, errors: string[] }
-    Enforces:
-      place_name: non-empty, max 200 chars
-      note: max 1000 chars
-      submitted_by: max 100 chars
-      lat: -90 to 90
-      lng: -180 to 180
-      file: if present, must be jpeg/png/webp, max 5MB
-
-  submitPin(formData, latlng) → Promise<void>
-    1. validateAddForm() — abort if invalid
-    2. ensureAnonSession()
-    3. If file: uploadPhoto(file) → image_path
-    4. insertPin({ place_name, note, submitted_by, owner_name, lat, lng, image_path })
-    5. If step 4 fails after step 3 succeeded: delete uploaded file
-    6. On full success only: closeAddModal()
-    7. showToast('Memory added!')
-    Note: insert uses a plain insert and does not request the inserted row back, because the returned-row read path previously triggered RLS failure.
-
-── DELETE PIN FLOW ─────────────────────────────────────────────
-  confirmDeletePin(pin) → Promise<boolean>
-    Shows a permanent-delete confirmation dialog.
-
-  deletePinFlow(pin) → Promise<void>
-    1. Verify current active name matches pin owner
-    2. Confirm delete
-    3. Delete pin row using `id` + `owner_name`
-    4. If deleted pin had photo: attempt photo cleanup from Storage
-    5. Remove pin from map
-    6. Show success or partial-cleanup failure feedback
-
-── STORAGE ─────────────────────────────────────────────────────
-  uploadPhoto(file)   → Promise<string>
-    Generates bucket-relative filename from a UUID and file extension.
-    Uploads to Supabase Storage bucket `pins`.
-    Returns image_path string (not full URL).
-    On failure: throws error, no auto-retry.
-
-  deletePhoto(image_path) → Promise<void>
-    Removes one previously uploaded file from Storage bucket `pins`.
-    Called only when upload succeeded but later pin insert failed.
-    Cleanup failure is logged with context and never shown as raw backend detail.
-
-  deletePin(pinId) → Promise<void>
-    Deletes one pin row after ownership/auth rules allow it.
-
-  getPhotoUrl(image_path) → string
-    Constructs full public URL from SUPABASE_URL + image_path.
-    Returns placeholder asset path if image_path is null.
-
-── VIEW PIN MODAL ──────────────────────────────────────────────
-  openViewModal(pin)  → void
-    Populates #modal-view with pin data.
-    Calls markSeen(pin.id).
-    Shows delete control only when current user is the owner.
-    Real photos can be tapped to open the full-screen lightbox.
-    Shows #modal-view.
-
-  closeViewModal()    → void
-    Hides and clears #modal-view.
-
-── FAILURE STATE CONTRACT ──────────────────────────────────────
-  handleSubmitFailure(stage, formState, image_path?) → void
-    Rules:
-      - never auto-retry upload or insert
-      - keep Add Pin modal open
-      - preserve place name, note, and submitted_by values
-      - clear file input so the user intentionally reselects the photo
-      - keep temporary marker visible
-      - if upload succeeded but insert failed, delete uploaded file first
-      - user must tap Save Memory again to retry
-
-── TOAST ───────────────────────────────────────────────────────
-  showToast(message, type) → void
-    type: 'success' | 'error' | 'info'
-    Displays #toast for 3 seconds then fades.
-    Never exposes raw Supabase error objects to user.
-
-── SPLASH ──────────────────────────────────────────────────────
-  initSplash()        → void
-    Shows #splash on load.
-    "Start Exploring" button calls hideSplash().
-    hideSplash() fades out #splash, calls loadPins() + subscribeRealtime().
-
-── INIT ────────────────────────────────────────────────────────
-  init()              → void
-    Entry point. Called on DOMContentLoaded.
-    Order:
-      1. initSupabase()
-      2. initMap()
-      3. promptUsername()    ← ensure username exists first
-      4. loadSeenPins()      ← fetch this user's seen pins from DB
-      5. initSplash()        ← then show splash / load pins
-```
-
-### `sw.js` — Responsibilities
-- Cache on install: `index.html`, `css/style.css`, all runtime `js/` modules used by the app, runtime config files, `manifest.json`, and all `assets/`
-- Cache on fetch: map tiles (cache-first), Supabase photo URLs (cache-first), CDN scripts (cache-first with network fallback)
-- Strategy: **Cache-first** for static assets and tiles; **Network-first** for Supabase API calls
-
-### `manifest.json` — Fields
-```
-name:             "Breadcrumbs"
-short_name:       "Breadcrumbs"
-start_url:        "/"
-display:          "standalone"
-background_color: "#FDFBF7"
-theme_color:      "#8A7560"
-icons:            SVG icon
-```
-
----
-
-## 2A. LIVE BUGS FOUND AND FIXED
-
-| Area | Root Cause | Fix |
-|------|------------|-----|
-| Pin insert | `insert(...).select().single()` caused the write to fail when the returned-row read hit RLS | Changed insert path to plain `insert(...)` |
-| Pin visibility after auth | Anonymous auth sessions use `authenticated`, but the read policy only allowed `anon` | Added `authenticated` to the read policy |
-| New-pin placement drift | Entrance animation overwrote Leaflet wrapper transform | Animate the inner marker element instead of the Leaflet wrapper |
-| Delete flow | Missing delete policy for authenticated anonymous sessions | Added `pins` delete policy |
-| Photo upload | `pins` storage bucket and storage policies were missing | Created/configured bucket and storage object policies |
-| Photo UX | No selected-file feedback and cropped image display | Added preview, selected state, contain-fit view, and full-screen lightbox |
-
----
-
-## 3. DATA MODEL
-
-### `accounts` Table
+Those drifts were accounted for in later phase documents and supporting docs were updated.
 | Field | Type | Constraints | Validation |
 |-------|------|-------------|------------|
 | `name` | `text` | PK, unique, NOT NULL | Non-empty, max 100 chars |

@@ -1,5 +1,14 @@
 import { expect, summarizeResults } from './test-runner.js';
-import { parseCssTimeToMs, getTransitionTimeoutMs, getSelectedPhotoStatus, buildActiveUsernameLabel, setActiveUsernameDisplay, showViewModal } from './ui.js';
+import {
+  parseCssTimeToMs,
+  getTransitionTimeoutMs,
+  getSelectedPhotoStatus,
+  buildActiveUsernameLabel,
+  getAddModalIdleLabel,
+  resolveExistingPinPlaceName,
+  setActiveUsernameDisplay,
+  showViewModal,
+} from './ui.js';
 
 // ─── parseCssTimeToMs ────────────────────────────────────────────────────────
 
@@ -24,6 +33,10 @@ expect('getSelectedPhotoStatus returns the selected filename', getSelectedPhotoS
 
 expect('buildActiveUsernameLabel trims the username for display', buildActiveUsernameLabel('  Petra  '), 'Petra');
 expect('buildActiveUsernameLabel returns empty string for non-string input', buildActiveUsernameLabel(null), '');
+expect('getAddModalIdleLabel returns add-mode text', getAddModalIdleLabel(false), 'Save Memory');
+expect('getAddModalIdleLabel returns edit-mode text', getAddModalIdleLabel(true), 'Save Changes');
+expect('resolveExistingPinPlaceName reads camelCase placeName', resolveExistingPinPlaceName({ placeName: 'Paris' }), 'Paris');
+expect('resolveExistingPinPlaceName falls back to database place_name', resolveExistingPinPlaceName({ place_name: 'Rome' }), 'Rome');
 
 // ─── showViewModal ──────────────────────────────────────────────────────────
 

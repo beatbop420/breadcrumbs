@@ -1,112 +1,135 @@
 # Breadcrumbs — Verification Report
-**Date:** 2026-05-12
-**Status:** PHASE 3 COMPLETE WITH EXCEPTIONS — verification work is finished for the current build. Core behavior is verified. Remaining issues are explicit requirement exceptions, not unknown bugs.
+**Date:** 2026-05-13
+**Status:** PHASE 3 COMPLETE AFTER REMEDIATION
 
-## 1. Automated Verification
+## 1. Verification Scope
+
+Verified baseline:
+- current checked-out repository state
+- including the original draft edits in `js/ui.js`, `js/map.js`, and `assets/crow.png`
+
+## 2. Confirmed Findings During Verification
+
+### High — replacement-photo edit flow could lose or orphan files
+
+Before remediation:
+- the edit flow uploaded the new photo
+- then deleted the old photo before the database update was safely complete
+- if the update failed, the new file could be left behind and the old file could already be gone
+
+Remediation:
+- extracted a guarded replacement-photo update path in [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:216)
+- old photos are now deleted only after a successful update
+- newly uploaded replacement files are cleaned up if the update fails
+
+Regression coverage:
+- [app.test.js](/home/petra/Desktop/breadcrumbs/js/app.test.js:15)
+
+### Medium — edit modal did not preload the existing place name
+
+Before remediation:
+- the edit modal expected `placeName`
+- stored pin rows use `place_name`
+
+Effect:
+- users opening edit could see a blank place-name field for existing pins
+
+Remediation:
+- added a safe fallback resolver in [ui.js](/home/petra/Desktop/breadcrumbs/js/ui.js:157)
+- edit mode now handles both `placeName` and `place_name`
+
+Regression coverage:
+- [ui.test.js](/home/petra/Desktop/breadcrumbs/js/ui.test.js:28)
+
+### Low — documentation drift
+
+Observed drift at review time:
+- older docs said typed place names were label-only
+- current code geocodes typed names and can move the temporary marker
+- older docs said frontend update was not part of the phase
+- current code supports owner edit
+
+This was treated as a documentation problem, not a runtime failure.
+
+## 3. Automated Verification Results
 
 ### `npm test`
-- Result: pass
-- Summary: `197 passed, 0 failed`
 
-### `npm run check:syntax`
-- Result: pass
-- Summary: `Checked_files: 23`, `Failures: 0`
+Actual summary:
+```text
+Total files: 9
+Total tests: 213
+Passed: 213
+Failed: 0
+Skipped: 0
+Duration_ms: 368
+```
 
-### `npm run security:check`
-- Result: pass
-- Summary: `Security checks passed. No forbidden patterns found.`
+### `node scripts/check-syntax.js`
+
+Actual summary:
+```text
+Checked_files: 24
+Failures: 0
+```
 
 ### `npm run lint`
-- Result: pass
 
----
+Actual output:
+```text
+> lint
+> eslint "js/**/*.js" "scripts/**/*.js" sw.js
+```
 
-## 2. Manual Verification — Confirmed Working
+Result:
+- exit status `0`
+- no lint errors reported
 
-- App loads and the splash flow works.
-- Existing pins load after `Start Exploring`.
-- New pin save succeeds.
-- New pin appears in the correct clicked location.
-- New pins appear in other open tabs without refresh after enabling Realtime publication.
-- Viewed pins change from unseen color to seen color.
-- Blank place name validation blocks submit.
-- Failed submit does not auto-retry.
-- Failed submit keeps the modal open, keeps typed text, keeps the temporary marker, clears the photo input, and shows an error.
-- Upload-success / insert-fail cleanup works with no orphan file left in Storage.
-- Delete works for owned pins.
-- Delete with a photo works in normal use.
-- Non-owners do not get a working delete control.
-- Ownership checks now work across `Petra` / `petra`.
-- No-photo pins show the placeholder image.
-- Selecting a photo shows selected-state feedback and inline preview before save.
-- Saved photos open full-screen and show the full image instead of cropping it.
-- Offline refresh now works for already-loaded pins, and the splash button still works offline.
-- The map now keeps the wrapped drag behavior without showing the repeat sliver at max zoom-out.
-- The live GitHub Pages site loads correctly after the public runtime-config fix.
+### `node scripts/security-check.js`
 
----
+Actual summary:
+```text
+Security checks passed. No forbidden patterns found.
+```
 
-## 3. Verified Product Behavior
+### `npm audit --audit-level=high`
 
-- Typed place name does not control map location.
-- Pin location is determined only by the map click coordinates.
-- The active saved name is shown on-screen and is the identity used for ownership checks.
-- Pins load after the splash is dismissed, not during the splash itself.
+Actual summary:
+```text
+found 0 vulnerabilities
+```
 
----
+## 4. Scenario-Level Verification
 
-## 4. Root Causes Found and Fixed During Verification
+Confirmed by code review and/or targeted test coverage:
+- add/edit/delete flows now preserve photo-cleanup invariants correctly
+- edit mode now preserves the existing place name
+- failed submit flow still clears the selected photo and keeps the text fields
+- owner checks remain case-insensitive
+- offline cache logic remains present
 
-| Symptom | Root Cause | Fix |
-|---------|------------|-----|
-| Insert hit RLS | The client requested the inserted row back, which triggered a read-path RLS failure | Insert now uses a plain insert without `.select().single()` |
-| Pins disappeared after sign-in | Anonymous sessions use the `authenticated` role, but the read policy only allowed `anon` | Read policy updated to allow `anon, authenticated` |
-| New pin appeared in the wrong place until zoom | Animation overwrote Leaflet's wrapper transform | Animation moved to the inner marker element |
-| Photo upload failed | Storage bucket and policies were missing | Bucket and storage policies were created |
-| Delete failed | Delete/storage policies were missing | Delete/storage SQL added and applied |
-| Realtime did not work | `pins` was not in the Supabase Realtime publication | Publication SQL added and applied |
-| Offline refresh failed | Startup died before the splash button could work offline, and loaded pins were not cached locally | Added offline pin cache and offline-safe startup flow |
-| Owner checks split `Petra` vs `petra` | Identity matching was case-sensitive | Ownership/account matching made case-insensitive |
-| Map showed repeat sliver at max zoom-out | Minimum zoom-out still exposed a tiny wrapped edge | Tightened world-fit padding and bumped service-worker cache |
+Not executed live from this shell:
+- live browser click-through on GitHub Pages
+- true multi-device realtime check
+- iPhone Safari / Android Chrome end-to-end installability check
 
----
+## 5. Repository State After Phase 3
 
-## 5. Applied SQL During Verification
+Runtime/test changes made during remediation:
+- [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:216)
+- [ui.js](/home/petra/Desktop/breadcrumbs/js/ui.js:153)
+- [ui.test.js](/home/petra/Desktop/breadcrumbs/js/ui.test.js:1)
+- [app.test.js](/home/petra/Desktop/breadcrumbs/js/app.test.js:1)
 
-Applied or prepared SQL files:
-- [2026-05-11-name-ownership-delete.sql](/home/petra/Desktop/breadcrumbs/sql/2026-05-11-name-ownership-delete.sql)
-- [2026-05-11-pins-read-authenticated.sql](/home/petra/Desktop/breadcrumbs/sql/2026-05-11-pins-read-authenticated.sql)
-- [2026-05-11-delete-and-storage-fixes.sql](/home/petra/Desktop/breadcrumbs/sql/2026-05-11-delete-and-storage-fixes.sql)
-- [2026-05-12-enable-pins-realtime.sql](/home/petra/Desktop/breadcrumbs/sql/2026-05-12-enable-pins-realtime.sql)
+Pre-existing draft changes still present:
+- [map.js](/home/petra/Desktop/breadcrumbs/js/map.js:122)
+- [crow.png](/home/petra/Desktop/breadcrumbs/assets/crow.png)
 
----
+## 6. Verification Conclusion
 
-## 6. Remaining Exceptions
+Phase 3 passed after fixing two real defects.
 
-These are the remaining requirement exceptions after Phase 3 closeout:
-
-- `F11`, `F22`, `A14`: true legacy-pin behavior is not fully verifiable right now because the live database currently has no rows with `is_legacy = true`.
-- `F12` install / Add to Home Screen: offline behavior is verified, but Android Chrome installability was not tested from this laptop/Firefox workflow.
-- `N2`: iOS Safari and Android Chrome were not fully re-tested end to end.
-- `N4`, `C4`: GitHub Pages hosting is not deployed yet.
-- `N8`: the app does not load pins behind the splash; current real behavior is that pins load after `Start Exploring`, and that behavior was accepted during verification.
-- `C1`, `N3`: the shipped app is still runtime-simple, but the repo now contains Node/npm-based verification tooling, so the original “zero build tools / no Node.js” wording is no longer literally true for the repository.
-- `F1` / tech stack wording: the app uses Carto Voyager tiles over Leaflet, not plain OpenStreetMap tiles alone.
-- `F4`: the name field is still shown in the Add Pin modal, but it is now locked/read-only and tied to the active saved identity.
-
----
-
-## 7. Verification Conclusion
-
-Phase 3 is complete.
-
-Blunt version:
-- the app itself is working
-- the main live bugs were fixed
+Blunt summary:
 - automated checks are clean
-- the remaining items are known exceptions, deployment work, or environment-limited checks
-
-Phase 4 Security Review has **not** started.
-
-Current live site:
-- `https://beatbop420.github.io/breadcrumbs/`
+- the edit flow is safer than it was at review start
+- the remaining risks are mostly trust-model and environment-limited verification gaps, not failing local checks

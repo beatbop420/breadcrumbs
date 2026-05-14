@@ -4,6 +4,7 @@ const TOAST_DURATION_MS = 1600;
 const PHOTO_UPLOAD_DEFAULT_LABEL = 'Choose a photo';
 const PHOTO_UPLOAD_DEFAULT_STATUS = 'No photo selected';
 const ADD_SUBMIT_DEFAULT_LABEL = 'Save Memory';
+const ADD_SUBMIT_EDIT_LABEL = 'Save Changes';
 const ADD_SUBMIT_LOADING_LABEL = 'Saving...';
 const ADD_MODAL_COUNTER_CONFIGS = [
   { inputId: 'add-note', counterId: 'note-counter', maxLength: PIN_NOTE_MAX },
@@ -147,6 +148,21 @@ function showUsernamePrompt(onSubmit, mode = 'initial') {
 function buildActiveUsernameLabel(username) {
   if (typeof username !== 'string') return '';
   return username.trim();
+}
+
+function getAddModalIdleLabel(isEditMode) {
+  return isEditMode ? ADD_SUBMIT_EDIT_LABEL : ADD_SUBMIT_DEFAULT_LABEL;
+}
+
+function resolveExistingPinPlaceName(existingPin) {
+  if (!existingPin || typeof existingPin !== 'object') return '';
+  if (typeof existingPin.placeName === 'string' && existingPin.placeName.trim().length > 0) {
+    return existingPin.placeName;
+  }
+  if (typeof existingPin.place_name === 'string') {
+    return existingPin.place_name;
+  }
+  return '';
 }
 
 function setActiveUsernameDisplay(username) {
@@ -297,15 +313,16 @@ function showAddModal(latlng, prefillUsername, onSubmit, existingPin = null) {
   addPinForm.reset();
 
   const isEdit = Boolean(existingPin);
+  addPinForm.dataset.isEdit = isEdit ? 'true' : 'false';
   document.querySelector('#modal-add .modal__title').textContent = isEdit ? 'Edit Memory' : 'Drop a Crumb';
-  document.getElementById('add-submit-btn').textContent = isEdit ? 'Save Changes' : 'Save Memory';
+  document.getElementById('add-submit-btn').textContent = getAddModalIdleLabel(isEdit);
 
   document.getElementById('add-lat').value = latlng.lat;
   document.getElementById('add-lng').value = latlng.lng;
   document.getElementById('add-submitted-by').value = prefillUsername || '';
 
   if (isEdit) {
-    document.getElementById('add-place-name').value = existingPin.placeName || '';
+    document.getElementById('add-place-name').value = resolveExistingPinPlaceName(existingPin);
     document.getElementById('add-note').value = existingPin.note || '';
   }
 
@@ -327,9 +344,11 @@ function hideAddModal() {
 }
 
 function setAddModalSubmitting(isSubmitting) {
+  const addPinForm = document.getElementById('add-pin-form');
   const submitButton = document.getElementById('add-submit-btn');
+  const isEditMode = addPinForm?.dataset?.isEdit === 'true';
   submitButton.disabled = isSubmitting;
-  submitButton.textContent = isSubmitting ? ADD_SUBMIT_LOADING_LABEL : ADD_SUBMIT_DEFAULT_LABEL;
+  submitButton.textContent = isSubmitting ? ADD_SUBMIT_LOADING_LABEL : getAddModalIdleLabel(isEditMode);
 }
 
 function showAddModalSubmitError(errorMessage) {
@@ -368,6 +387,20 @@ function initializePhotoLightbox() {
   });
 }
 
+function setOptionalActionButton(buttonId, isVisible, onClick) {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
+
+  button.onclick = null;
+  if (isVisible) {
+    button.classList.remove('hidden');
+    button.onclick = onClick;
+    return;
+  }
+
+  button.classList.add('hidden');
+}
+
 function showViewModal(safePin, viewOptions = {}) {
   initializePhotoLightbox();
   setElementText('view-place-name', safePin.placeName);
@@ -386,33 +419,15 @@ function showViewModal(safePin, viewOptions = {}) {
     photoElement.onclick = () => showPhotoLightbox(safePin.photoUrl, `Photo from ${safePin.placeName}`);
   }
 
-  const editButton = document.getElementById('view-edit');
-  editButton.onclick = null;
-  if (viewOptions.canEdit) {
-    editButton.classList.remove('hidden');
-    editButton.onclick = viewOptions.onEdit;
-  } else {
-    editButton.classList.add('hidden');
-  }
-
-  const deleteButton = document.getElementById('view-delete');
-  deleteButton.onclick = null;
-  if (viewOptions.canDelete) {
-    deleteButton.classList.remove('hidden');
-    deleteButton.onclick = viewOptions.onDelete;
-  } else {
-    deleteButton.classList.add('hidden');
-  }
+  setOptionalActionButton('view-edit', viewOptions.canEdit, viewOptions.onEdit);
+  setOptionalActionButton('view-delete', viewOptions.canDelete, viewOptions.onDelete);
 
   showElement('modal-view');
 }
 
 function hideViewModal() {
-  document.getElementById('view-edit').onclick = null;
-  document.getElementById('view-edit').classList.add('hidden');
-  const deleteButton = document.getElementById('view-delete');
-  deleteButton.onclick = null;
-  deleteButton.classList.add('hidden');
+  setOptionalActionButton('view-edit', false, null);
+  setOptionalActionButton('view-delete', false, null);
   hideElement('modal-view');
 }
 
@@ -443,6 +458,8 @@ export {
   getTransitionTimeoutMs,
   getSelectedPhotoStatus,
   buildActiveUsernameLabel,
+  getAddModalIdleLabel,
+  resolveExistingPinPlaceName,
   setActiveUsernameDisplay,
   setAddModalSubmitting,
   showPhotoLightbox,
