@@ -1,4 +1,5 @@
 import { validatePinForm, validateUsername, PIN_NOTE_MAX, PIN_PLACE_NAME_MAX } from './data.js';
+import { normalizeUsername } from './pinLogic.js';
 
 const TOAST_DURATION_MS = 1600;
 const PHOTO_UPLOAD_DEFAULT_LABEL = 'Choose a photo';
@@ -17,6 +18,7 @@ let charCountersInitialized = false;
 let usernamePromptInitialized = false;
 let addPinFormInitialized = false;
 let addPhotoPreviewObjectUrl = null;
+let isEditMode = false;
 
 function showElement(elementId) {
   document.getElementById(elementId).classList.remove('hidden');
@@ -145,10 +147,7 @@ function showUsernamePrompt(onSubmit, mode = 'initial') {
   showElement('username-prompt');
 }
 
-function buildActiveUsernameLabel(username) {
-  if (typeof username !== 'string') return '';
-  return username.trim();
-}
+const buildActiveUsernameLabel = normalizeUsername;
 
 function getAddModalIdleLabel(isEditMode) {
   return isEditMode ? ADD_SUBMIT_EDIT_LABEL : ADD_SUBMIT_DEFAULT_LABEL;
@@ -215,31 +214,8 @@ function setAddPhotoPreview(file) {
   }
 
   previewImage.alt = `Selected photo preview: ${file.name || 'photo'}`;
-
-  try {
-    if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-      addPhotoPreviewObjectUrl = URL.createObjectURL(file);
-      previewImage.src = addPhotoPreviewObjectUrl;
-      showElement('add-photo-preview-wrap');
-      return;
-    }
-  } catch (err) {
-    console.warn('[Breadcrumbs] object URL preview failed, falling back to FileReader:', err);
-  }
-
-  if (typeof FileReader === 'function') {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => {
-      if (typeof reader.result === 'string') {
-        previewImage.src = reader.result;
-        showElement('add-photo-preview-wrap');
-      }
-    });
-    reader.readAsDataURL(file);
-    return;
-  }
-
-  previewImage.src = '';
+  addPhotoPreviewObjectUrl = URL.createObjectURL(file);
+  previewImage.src = addPhotoPreviewObjectUrl;
   showElement('add-photo-preview-wrap');
 }
 
@@ -281,7 +257,6 @@ function initializeAddPinForm() {
   const photoInput = document.getElementById('add-photo');
 
   photoInput.addEventListener('change', syncAddPhotoSelection);
-  photoInput.addEventListener('input', syncAddPhotoSelection);
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -313,7 +288,7 @@ function showAddModal(latlng, prefillUsername, onSubmit, existingPin = null) {
   addPinForm.reset();
 
   const isEdit = Boolean(existingPin);
-  addPinForm.dataset.isEdit = isEdit ? 'true' : 'false';
+  isEditMode = isEdit;
   document.querySelector('#modal-add .modal__title').textContent = isEdit ? 'Edit Memory' : 'Drop a Crumb';
   document.getElementById('add-submit-btn').textContent = getAddModalIdleLabel(isEdit);
 
@@ -329,13 +304,13 @@ function showAddModal(latlng, prefillUsername, onSubmit, existingPin = null) {
   clearAddPhotoInput();
   setElementText('add-error', '');
   syncAddModalCounters();
-  syncAddPhotoSelection();
   showElement('modal-add');
 }
 
 function hideAddModal() {
   addPinSubmitHandler = null;
   setAddModalSubmitting(false);
+  isEditMode = false;
   hideElement('modal-add');
   document.getElementById('add-pin-form').reset();
   clearAddPhotoInput();
@@ -344,9 +319,7 @@ function hideAddModal() {
 }
 
 function setAddModalSubmitting(isSubmitting) {
-  const addPinForm = document.getElementById('add-pin-form');
   const submitButton = document.getElementById('add-submit-btn');
-  const isEditMode = addPinForm?.dataset?.isEdit === 'true';
   submitButton.disabled = isSubmitting;
   submitButton.textContent = isSubmitting ? ADD_SUBMIT_LOADING_LABEL : getAddModalIdleLabel(isEditMode);
 }
@@ -393,12 +366,12 @@ function setOptionalActionButton(buttonId, isVisible, onClick) {
 
   button.onclick = null;
   if (isVisible) {
-    button.classList.remove('hidden');
+    showElement(buttonId);
     button.onclick = onClick;
     return;
   }
 
-  button.classList.add('hidden');
+  hideElement(buttonId);
 }
 
 function showViewModal(safePin, viewOptions = {}) {

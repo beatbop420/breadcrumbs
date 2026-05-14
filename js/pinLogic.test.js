@@ -38,15 +38,19 @@ expect('normalizeUsernameIdentity lowercases for identity matching', normalizeUs
 
 // ─── buildStoragePath ─────────────────────────────────────────────────────────
 
-const jpegPath = buildStoragePath({ name: 'photo.jpg' });
-const pngPath = buildStoragePath({ name: 'photo.png' });
-const webpPath = buildStoragePath({ name: 'photo.webp' });
+const jpegPath = buildStoragePath({ name: 'photo.jpg', type: 'image/jpeg' });
+const pngPath = buildStoragePath({ name: 'photo.png', type: 'image/png' });
+const webpPath = buildStoragePath({ name: 'photo.webp', type: 'image/webp' });
+const convertedHeicPath = buildStoragePath({ name: 'IMG_0001.HEIC', type: 'image/jpeg' });
+const fallbackPath = buildStoragePath({ name: 'mystery.heic' });
 
 expect('buildStoragePath does not prefix the bucket name', jpegPath.startsWith('pins/'), false);
 expect('buildStoragePath ends with .jpg', jpegPath.endsWith('.jpg'), true);
 expect('buildStoragePath ends with .png', pngPath.endsWith('.png'), true);
 expect('buildStoragePath ends with .webp', webpPath.endsWith('.webp'), true);
-expect('buildStoragePath generates unique paths', jpegPath !== buildStoragePath({ name: 'photo.jpg' }), true);
+expect('buildStoragePath prefers MIME type over filename extension', convertedHeicPath.endsWith('.jpg'), true);
+expect('buildStoragePath falls back to the filename extension when type is missing', fallbackPath.endsWith('.heic'), true);
+expect('buildStoragePath generates unique paths', jpegPath !== buildStoragePath({ name: 'photo.jpg', type: 'image/jpeg' }), true);
 
 // ─── normalizeStoragePath ────────────────────────────────────────────────────
 

@@ -1,67 +1,39 @@
 # Breadcrumbs — Final Review
-**Date:** 2026-05-13
+**Date:** 2026-05-14
 **Status:** COMPLETE
 
 ## 1. Scope Check
 
-Requested work for this review cycle:
-- review the existing app
-- verify the current repository state
-- include the draft changes already sitting in the working tree
-- fix only defects proven by verification
-- close with security and final traceability review
-
-Completed:
+Completed across the review and follow-up cleanup:
 - current repo state reviewed
-- automated verification executed and captured
-- two real defects fixed
-- regression tests added
-- security review completed
-- phase documents refreshed to match the current reviewed state
+- automated verification executed and rerun locally
+- edit-flow defects fixed and regression-covered
+- iPhone photo upload behavior cleaned up without undoing the earlier working picker fixes
+- closeout documents refreshed so they no longer describe the old pre-save review state
 
-## 2. Traceability Matrix
+## 2. What Changed
 
-| Review Area | Evidence | Outcome |
-|---|---|---|
-| Baseline lock | Current repo including draft changes | Covered |
-| Architecture and planning | Current module review and verification plan | Covered |
-| Verification execution | `npm test`, syntax, lint, security-check, dependency audit | Covered |
-| Defect remediation | [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:216), [ui.js](/home/petra/Desktop/breadcrumbs/js/ui.js:157) | Covered |
-| Regression coverage | [app.test.js](/home/petra/Desktop/breadcrumbs/js/app.test.js:1), [ui.test.js](/home/petra/Desktop/breadcrumbs/js/ui.test.js:1) | Covered |
-| Security review | Accepted waivers documented in Phase 4 | Covered |
+- The main saved local milestone is still `8bfa748` (`Fix edit flow cleanup and refresh review docs`).
+- Follow-up cleanup kept the good UI refactors, deduplicated storage upload code, and hardened photo storage naming so converted iPhone photos use `file.type` instead of blindly trusting the original filename extension.
+- The photo picker path was aligned back to the earlier iPhone-safe behavior: nested label/input activation, 1px hidden input, and explicit JPEG/PNG/WebP accept types.
 
-## 3. Consistency Check
+## 3. Verification Snapshot
 
-Updated in this pass:
-- phase documents now match the current review cycle
-- phase documents now acknowledge live edit support and geocoding behavior
+- `npm test`: 217 passed, 0 failed
+- `node scripts/check-syntax.js`: 24 files checked, 0 failures
+- `npm run lint`: passed
 
-Supporting documentation also refreshed:
-- [README.md](/home/petra/Desktop/breadcrumbs/README.md:1)
+## 4. Remaining Caution
 
-Remaining caution:
-- the runtime trust model is still intentionally weaker than the UI wording may imply
-- that is documented as a waiver, not an unresolved surprise
-
-## 4. Packaging Check
-
-Current repository state is not yet packaged as a clean save point because changes are still uncommitted.
-
-Current working tree after this review:
-- modified runtime/test files
-- updated phase documents
-- one new regression test file
-- one untracked image asset
+- The trust model is still intentionally weak for trusted-family use.
+- The broader server-side delete/storage policy model is still an accepted waiver.
+- The live GitHub Pages site remains behind local work until the next push.
+- Real iPhone and Android device checks are still worth doing after that push.
 
 ## 5. Final Conclusion
 
-The review cycle is complete.
+The review and follow-up cleanup are complete locally.
 
-Result:
-- verification passes
-- security waivers are explicit
-- documentation now reflects the reviewed codebase much more accurately
-
-What still remains outside this review:
-- commit the current working tree if desired
-- optionally run live manual browser/device checks for installability and realtime behavior
+What remains outside this closeout:
+- push the latest local changes when you want them live
+- verify the rebuilt Pages URL on iPhone Safari/home-screen PWA and Android Chrome

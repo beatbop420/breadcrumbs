@@ -1,14 +1,12 @@
 # Breadcrumbs — Phase 5 Traceability And Audit
-**Date:** 2026-05-13
+**Date:** 2026-05-14
 
 ## High-Signal Findings
 
-- The reviewed baseline was the live working tree, not just the last commit.
-- Two real defects were confirmed and fixed during verification:
-  - unsafe replacement-photo edit cleanup
-  - missing edit-mode place-name prefill
+- The main local saved milestone is `8bfa748`, with additional closeout cleanup applied afterward in the working tree.
+- The biggest non-security drift was documentation, not core runtime behavior.
+- The iPhone photo path depends on preserving the native label-based picker flow and MIME-aware storage handling.
 - The biggest standing security risk is still the trust-based identity and broad server-side delete/storage policy model.
-- The biggest non-security drift at review start was documentation, not runtime behavior.
 
 ## Traceability Snapshot
 
@@ -20,23 +18,9 @@
 | Trust-model and policy waivers | Security Review |
 | Scope, consistency, and packaging closeout | Final Review |
 
-## Drift Review
+## Follow-Up Closeout Notes
 
-Drift that existed at review start:
-- docs said typed place names were label-only
-- code geocoded typed place names and could move the temporary marker
-- docs said frontend update was out of scope
-- code supported owner edit
-
-Resolution:
-- phase documents were updated in this pass
-- supporting README text was also refreshed
-
-## Save Point Notes
-
-The repository is in a verified-but-uncommitted state.
-
-That means:
-- the review is complete
-- the fixes and document refreshes are present
-- a separate commit step is still needed if you want a clean saved milestone
+- Edit-flow cleanup and regression coverage remain in place.
+- The photo upload path now keeps the earlier iPhone-safe picker behavior and also uses `file.type` to choose storage extensions and upload content types.
+- Local automated verification passes after this follow-up cleanup.
+- The local fix set is still not live on GitHub Pages until the next push.

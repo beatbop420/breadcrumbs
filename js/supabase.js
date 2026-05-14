@@ -12,6 +12,28 @@ function getClient() {
   return supabaseClient;
 }
 
+function buildStorageUploadOptions(file, upsert) {
+  const uploadOptions = { upsert };
+  if (file && typeof file.type === 'string' && file.type.trim().length > 0) {
+    uploadOptions.contentType = file.type.trim();
+  }
+  return uploadOptions;
+}
+
+async function uploadToStorage(file, storagePath, upsert, actionName) {
+  const client = getClient();
+  const normalizedPath = normalizeStoragePath(storagePath);
+  if (!normalizedPath) throw new Error(`[Breadcrumbs] ${actionName} requires a valid storage path.`);
+
+  const { error } = await client
+    .storage
+    .from(STORAGE_BUCKET_NAME)
+    .upload(normalizedPath, file, buildStorageUploadOptions(file, upsert));
+
+  if (error) throw new Error(`[Breadcrumbs] ${actionName} failed: ${error.message}`);
+  return normalizedPath;
+}
+
 function setClientForTesting(mockClient) {
   supabaseClient = mockClient;
 }
@@ -93,12 +115,7 @@ async function insertView(username, pinId) {
 }
 
 async function uploadPhoto(file, storagePath) {
-  const client = getClient();
-  const normalizedPath = normalizeStoragePath(storagePath);
-  if (!normalizedPath) throw new Error('[Breadcrumbs] uploadPhoto requires a valid storage path.');
-  const { error } = await client.storage.from(STORAGE_BUCKET_NAME).upload(normalizedPath, file, { upsert: false });
-  if (error) throw new Error(`[Breadcrumbs] uploadPhoto failed: ${error.message}`);
-  return normalizedPath;
+  return uploadToStorage(file, storagePath, false, 'uploadPhoto');
 }
 
 async function downloadPhoto(storagePath) {
@@ -111,16 +128,7 @@ async function downloadPhoto(storagePath) {
 }
 
 async function restorePhoto(file, storagePath) {
-  const client = getClient();
-  const normalizedPath = normalizeStoragePath(storagePath);
-  if (!normalizedPath) throw new Error('[Breadcrumbs] restorePhoto requires a valid storage path.');
-  const uploadOptions = { upsert: true };
-  if (file && typeof file.type === 'string' && file.type.length > 0) {
-    uploadOptions.contentType = file.type;
-  }
-  const { error } = await client.storage.from(STORAGE_BUCKET_NAME).upload(normalizedPath, file, uploadOptions);
-  if (error) throw new Error(`[Breadcrumbs] restorePhoto failed: ${error.message}`);
-  return normalizedPath;
+  return uploadToStorage(file, storagePath, true, 'restorePhoto');
 }
 
 async function deletePhoto(storagePath) {

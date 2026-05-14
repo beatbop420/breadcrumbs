@@ -4,6 +4,13 @@ const PIN_COLOR_UNSEEN = '#E8534A';
 const PIN_COLOR_SEEN = '#A8897A';
 const STORAGE_BUCKET_NAME = 'pins';
 const PLACEHOLDER_IMAGE_PATH = 'assets/pin-placeholder.svg';
+const STORAGE_EXTENSION_BY_MIME_TYPE = {
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
 
 function isUnseenPin(pinId, seenPinSet) {
   return !seenPinSet.has(pinId);
@@ -27,8 +34,27 @@ function normalizeStoragePath(rawPath) {
   return rawPath.trim().replace(/^\/?pins\//, '');
 }
 
+function resolveStorageExtension(file) {
+  const normalizedType = typeof file?.type === 'string'
+    ? file.type.trim().toLowerCase()
+    : '';
+  if (normalizedType && STORAGE_EXTENSION_BY_MIME_TYPE[normalizedType]) {
+    return STORAGE_EXTENSION_BY_MIME_TYPE[normalizedType];
+  }
+
+  const normalizedName = typeof file?.name === 'string'
+    ? file.name.trim().toLowerCase()
+    : '';
+  if (normalizedName.includes('.')) {
+    const fallbackExtension = normalizedName.split('.').pop();
+    if (fallbackExtension) return fallbackExtension;
+  }
+
+  return 'jpg';
+}
+
 function buildStoragePath(file) {
-  const extension = file.name.split('.').pop().toLowerCase();
+  const extension = resolveStorageExtension(file);
   const uniqueId = crypto.randomUUID();
   return `${uniqueId}.${extension}`;
 }

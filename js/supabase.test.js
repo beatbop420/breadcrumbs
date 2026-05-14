@@ -274,6 +274,12 @@ setClientForTesting(buildMockClient());
 const storagePath = await uploadPhoto({ name: 'photo.jpg' }, 'pins/test.jpg');
 expect('uploadPhoto returns normalized storage path on success', storagePath, 'test.jpg');
 
+const uploadCalls = [];
+setClientForTesting(buildMockClient({ uploadCalls }));
+await uploadPhoto({ name: 'photo.jpg', type: 'image/jpeg' }, 'pins/test.jpg');
+expect('uploadPhoto uploads with upsert disabled', uploadCalls[0].options.upsert, false);
+expect('uploadPhoto preserves content type when present', uploadCalls[0].options.contentType, 'image/jpeg');
+
 setClientForTesting(buildMockClient({ uploadError: 'Upload failed' }));
 let uploadErr = null;
 try { await uploadPhoto({ name: 'photo.jpg' }, 'pins/test.jpg'); } catch (err) { uploadErr = err.message; }
