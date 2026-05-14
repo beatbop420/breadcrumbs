@@ -129,6 +129,7 @@ async function cleanupUploadedPhoto(uploadedImagePath) {
 }
 
 async function handlePinSubmit(cleanData, tempMarker) {
+  if (document.getElementById('add-submit-btn').disabled) return;
   setAddModalSubmitting(true);
   const hadSelectedPhoto = Boolean(cleanData.photo);
   let submitStage = 'auth';
@@ -306,6 +307,7 @@ async function handlePinEdit(pin) {
 }
 
 async function handlePinClick(pin) {
+  if (!runtimeConfig) return;
   const safePin = buildSafePinHtml(pin, runtimeConfig.supabaseUrl);
   const canOwn = isPinOwner(pin, currentUsername);
   showViewModal(safePin, {

@@ -1,9 +1,11 @@
 import { validatePinForm, validateUsername, PIN_NOTE_MAX, PIN_PLACE_NAME_MAX } from './data.js';
 import { normalizeUsername } from './pinLogic.js';
+import { normalizePhotoForUpload, requiresPhotoNormalization } from './photoProcessing.js';
 
 const TOAST_DURATION_MS = 1600;
 const PHOTO_UPLOAD_DEFAULT_LABEL = 'Choose a photo';
 const PHOTO_UPLOAD_DEFAULT_STATUS = 'No photo selected';
+const PHOTO_PREPARATION_FAILURE_MESSAGE = 'Couldn\'t prepare that photo. Try a different library photo or take a new one.';
 const ADD_SUBMIT_DEFAULT_LABEL = 'Save Memory';
 const ADD_SUBMIT_EDIT_LABEL = 'Save Changes';
 const ADD_SUBMIT_LOADING_LABEL = 'Saving...';
@@ -261,6 +263,15 @@ function initializeAddPinForm() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const rawFormData = buildAddPinFormData();
+    if (requiresPhotoNormalization(rawFormData.photo)) {
+      try {
+        rawFormData.photo = await normalizePhotoForUpload(rawFormData.photo);
+      } catch (err) {
+        console.error('[Breadcrumbs] normalizePhotoForUpload failed:', err);
+        showAddModalSubmitError(PHOTO_PREPARATION_FAILURE_MESSAGE);
+        return;
+      }
+    }
     const validationResult = validatePinForm(rawFormData);
 
     if (!validationResult.valid) {
