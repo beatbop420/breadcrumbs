@@ -41,14 +41,19 @@ saveRuntimeConfigForTesting(' https://example.supabase.co ', ' test-anon-key ');
 const resolvedStoredConfig = resolveSupabaseConfig();
 expect('resolveSupabaseConfig reads stored supabaseUrl', resolvedStoredConfig.supabaseUrl, 'https://example.supabase.co');
 expect('resolveSupabaseConfig reads stored supabaseAnonKey', resolvedStoredConfig.supabaseAnonKey, 'test-anon-key');
+expect('resolveSupabaseConfig leaves optional Cloudinary values blank by default', resolvedStoredConfig.cloudinaryCloudName, '');
 
 globalThis.window.BREADCRUMBS_CONFIG = {
   supabaseUrl: 'https://window.supabase.co',
   supabaseAnonKey: 'window-anon-key',
+  cloudinaryCloudName: 'window-cloud',
+  cloudinaryUploadPreset: 'window-preset',
 };
 const resolvedWindowConfig = resolveSupabaseConfig();
 expect('resolveSupabaseConfig prefers window config supabaseUrl', resolvedWindowConfig.supabaseUrl, 'https://window.supabase.co');
 expect('resolveSupabaseConfig prefers window config supabaseAnonKey', resolvedWindowConfig.supabaseAnonKey, 'window-anon-key');
+expect('resolveSupabaseConfig reads optional Cloudinary cloud name', resolvedWindowConfig.cloudinaryCloudName, 'window-cloud');
+expect('resolveSupabaseConfig reads optional Cloudinary upload preset', resolvedWindowConfig.cloudinaryUploadPreset, 'window-preset');
 
 clearRuntimeConfigForTesting();
 globalThis.window.BREADCRUMBS_CONFIG = {};

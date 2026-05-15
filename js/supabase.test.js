@@ -3,6 +3,7 @@ import {
   createSupabaseClient,
   getClient,
   setClientForTesting,
+  setPhotoServiceConfigForTesting,
   signInAnonymously,
   ensureAnonymousSession,
   fetchAllPins,
@@ -20,6 +21,8 @@ import {
 } from './supabase.js';
 
 // ─── MOCK HELPERS ─────────────────────────────────────────────────────────────
+
+const originalFetch = globalThis.fetch;
 
 function buildMockClient({
   pinsData = [],
@@ -134,9 +137,9 @@ function buildMockClient({
         upload: (path, file, options) => {
           uploadCalls.push({ path, file, options });
           return Promise.resolve(
-          uploadError
-            ? { error: { message: uploadError } }
-            : { error: null }
+            uploadError
+              ? { error: { message: uploadError } }
+              : { error: null }
           );
         },
         download: () => Promise.resolve(
@@ -156,6 +159,12 @@ function buildMockClient({
       subscribe: function() { return this; },
     }),
   };
+}
+
+function buildMockUploadFile(name = 'photo.jpg', type = 'image/jpeg', body = 'file-body') {
+  const blob = new Blob([body], { type });
+  Object.defineProperty(blob, 'name', { value: name });
+  return blob;
 }
 
 // ─── createSupabaseClient ─────────────────────────────────────────────────────
@@ -271,18 +280,38 @@ expect('insertView succeeds silently on success', insertViewErr, null);
 // ─── uploadPhoto ──────────────────────────────────────────────────────────────
 
 setClientForTesting(buildMockClient());
-const storagePath = await uploadPhoto({ name: 'photo.jpg' }, 'pins/test.jpg');
-expect('uploadPhoto returns normalized storage path on success', storagePath, 'test.jpg');
+setPhotoServiceConfigForTesting({
+  cloudinaryCloudName: 'family-cloud',
+  cloudinaryUploadPreset: 'breadcrumbs_unsigned',
+});
+const uploadFetchCalls = [];
+globalThis.fetch = (input, init = {}) => {
+  uploadFetchCalls.push({ input, init });
+  return Promise.resolve({
+    ok: true,
+    json: async () => ({
+      public_id: 'breadcrumbs/test',
+      version: 1778,
+      resource_type: 'image',
+      secure_url: 'https://res.cloudinary.com/family-cloud/image/upload/v1778/breadcrumbs/test.jpg',
+    }),
+  });
+};
+const storagePath = await uploadPhoto(buildMockUploadFile(), 'pins/test.jpg');
+expect('uploadPhoto returns a structured Cloudinary reference on success', storagePath.includes('"provider":"cloudinary"'), true);
+expect('uploadPhoto targets the Cloudinary unsigned upload endpoint', uploadFetchCalls[0].input, 'https://api.cloudinary.com/v1_1/family-cloud/image/upload');
+expect('uploadPhoto sends form data to Cloudinary', uploadFetchCalls[0].init.body instanceof FormData, true);
+expect('uploadPhoto sends the Cloudinary upload preset', uploadFetchCalls[0].init.body.get('upload_preset'), 'breadcrumbs_unsigned');
+expect('uploadPhoto sets a deterministic public_id for Cloudinary', uploadFetchCalls[0].init.body.get('public_id'), 'breadcrumbs/test');
+expect('uploadPhoto preserves content type when present', uploadFetchCalls[0].init.body.get('file').type, 'image/jpeg');
 
-const uploadCalls = [];
-setClientForTesting(buildMockClient({ uploadCalls }));
-await uploadPhoto({ name: 'photo.jpg', type: 'image/jpeg' }, 'pins/test.jpg');
-expect('uploadPhoto uploads with upsert disabled', uploadCalls[0].options.upsert, false);
-expect('uploadPhoto preserves content type when present', uploadCalls[0].options.contentType, 'image/jpeg');
-
-setClientForTesting(buildMockClient({ uploadError: 'Upload failed' }));
+globalThis.fetch = () => Promise.resolve({
+  ok: false,
+  status: 400,
+  json: async () => ({ error: { message: 'Upload failed' } }),
+});
 let uploadErr = null;
-try { await uploadPhoto({ name: 'photo.jpg' }, 'pins/test.jpg'); } catch (err) { uploadErr = err.message; }
+try { await uploadPhoto(buildMockUploadFile(), 'pins/test.jpg'); } catch (err) { uploadErr = err.message; }
 expect('uploadPhoto throws on storage error', uploadErr !== null, true);
 
 // ─── downloadPhoto / restorePhoto ───────────────────────────────────────────
@@ -290,6 +319,7 @@ expect('uploadPhoto throws on storage error', uploadErr !== null, true);
 setClientForTesting(buildMockClient({ downloadData: { type: 'image/webp', size: 2048 } }));
 const downloadedPhoto = await downloadPhoto('pins/test.webp');
 expect('downloadPhoto returns storage data on success', downloadedPhoto.size, 2048);
+expect('downloadPhoto returns null for Cloudinary image references', await downloadPhoto(storagePath), null);
 
 setClientForTesting(buildMockClient({ downloadError: 'Download failed' }));
 let downloadErr = null;
@@ -298,14 +328,16 @@ expect('downloadPhoto throws on storage download error', downloadErr !== null, t
 
 const restoreUploadCalls = [];
 setClientForTesting(buildMockClient({ uploadCalls: restoreUploadCalls }));
-const restoredPhotoPath = await restorePhoto({ type: 'image/png' }, 'pins/test.png');
+const restoredPhotoPath = await restorePhoto(new Blob(['restored'], { type: 'image/png' }), 'pins/test.png');
 expect('restorePhoto returns normalized storage path on success', restoredPhotoPath, 'test.png');
-expect('restorePhoto uploads with upsert enabled', restoreUploadCalls[0].options.upsert, true);
+expect('restorePhoto uploads legacy photos back into Supabase storage', restoreUploadCalls[0].path, 'test.png');
+expect('restorePhoto uploads legacy photos with upsert enabled', restoreUploadCalls[0].options.upsert, true);
 expect('restorePhoto preserves content type when present', restoreUploadCalls[0].options.contentType, 'image/png');
+expect('restorePhoto leaves existing Cloudinary references untouched', await restorePhoto(new Blob(['restored'], { type: 'image/png' }), storagePath), storagePath);
 
 setClientForTesting(buildMockClient({ uploadError: 'Restore failed' }));
 let restoreErr = null;
-try { await restorePhoto({ type: 'image/png' }, 'pins/test.png'); } catch (err) { restoreErr = err.message; }
+try { await restorePhoto(new Blob(['restored'], { type: 'image/png' }), 'pins/test.png'); } catch (err) { restoreErr = err.message; }
 expect('restorePhoto throws on storage upload error', restoreErr !== null, true);
 
 // ─── deletePhoto ──────────────────────────────────────────────────────────────
@@ -314,6 +346,7 @@ setClientForTesting(buildMockClient());
 let deleteErr = null;
 try { await deletePhoto('pins/test.jpg'); } catch (err) { deleteErr = err.message; }
 expect('deletePhoto succeeds silently on success', deleteErr, null);
+expect('deletePhoto no-ops for Cloudinary image references', await deletePhoto(storagePath), null);
 
 setClientForTesting(buildMockClient({ removeError: 'Remove failed' }));
 let removeErr = null;
@@ -338,5 +371,7 @@ setClientForTesting(buildMockClient({ deletePinError: 'Delete failed' }));
 let deletePinErr = null;
 try { await deletePin('pin-1', 'Sofia'); } catch (err) { deletePinErr = err.message; }
 expect('deletePin throws on delete error', deletePinErr !== null, true);
+
+globalThis.fetch = originalFetch;
 
 summarizeResults();

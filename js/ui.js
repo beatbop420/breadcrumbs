@@ -5,7 +5,6 @@ import { normalizePhotoForUpload, requiresPhotoNormalization } from './photoProc
 const TOAST_DURATION_MS = 1600;
 const PHOTO_UPLOAD_DEFAULT_LABEL = 'Choose a photo';
 const PHOTO_UPLOAD_DEFAULT_STATUS = 'No photo selected';
-const PHOTO_PREPARATION_FAILURE_MESSAGE = 'Couldn\'t prepare that photo. Try a different library photo or take a new one.';
 const ADD_SUBMIT_DEFAULT_LABEL = 'Save Memory';
 const ADD_SUBMIT_EDIT_LABEL = 'Save Changes';
 const ADD_SUBMIT_LOADING_LABEL = 'Saving...';
@@ -267,9 +266,7 @@ function initializeAddPinForm() {
       try {
         rawFormData.photo = await normalizePhotoForUpload(rawFormData.photo);
       } catch (err) {
-        console.error('[Breadcrumbs] normalizePhotoForUpload failed:', err);
-        showAddModalSubmitError(PHOTO_PREPARATION_FAILURE_MESSAGE);
-        return;
+        console.warn('[Breadcrumbs] normalizePhotoForUpload failed, falling back to raw upload:', err);
       }
     }
     const validationResult = validatePinForm(rawFormData);

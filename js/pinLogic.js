@@ -4,6 +4,7 @@ const PIN_COLOR_UNSEEN = '#E8534A';
 const PIN_COLOR_SEEN = '#A8897A';
 const STORAGE_BUCKET_NAME = 'pins';
 const PLACEHOLDER_IMAGE_PATH = 'assets/pin-placeholder.svg';
+const CLOUDINARY_IMAGE_PROVIDER = 'cloudinary';
 const STORAGE_EXTENSION_BY_MIME_TYPE = {
   'image/heic': 'heic',
   'image/heif': 'heif',
@@ -34,6 +35,38 @@ function normalizeStoragePath(rawPath) {
   return rawPath.trim().replace(/^\/?pins\//, '');
 }
 
+function isNonEmptyString(rawValue) {
+  return typeof rawValue === 'string' && rawValue.trim().length > 0;
+}
+
+function parseStoredImageReference(rawImagePath) {
+  if (!isNonEmptyString(rawImagePath)) return null;
+  const trimmedImagePath = rawImagePath.trim();
+  if (!trimmedImagePath.startsWith('{')) return null;
+
+  try {
+    const parsedValue = JSON.parse(trimmedImagePath);
+    return typeof parsedValue === 'object' && parsedValue !== null ? parsedValue : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function isCloudinaryImageReference(rawImagePath) {
+  const parsedReference = parseStoredImageReference(rawImagePath);
+  return parsedReference?.provider === CLOUDINARY_IMAGE_PROVIDER;
+}
+
+function buildCloudinaryImageReference({ publicId, version, resourceType = 'image', secureUrl }) {
+  return JSON.stringify({
+    provider: CLOUDINARY_IMAGE_PROVIDER,
+    publicId,
+    version,
+    resourceType,
+    secureUrl,
+  });
+}
+
 function resolveStorageExtension(file) {
   const normalizedType = typeof file?.type === 'string'
     ? file.type.trim().toLowerCase()
@@ -59,10 +92,62 @@ function buildStoragePath(file) {
   return `${uniqueId}.${extension}`;
 }
 
-function buildPhotoUrl(supabaseUrl, imagePath) {
+function resolvePhotoConfig(photoConfigOrSupabaseUrl) {
+  if (typeof photoConfigOrSupabaseUrl === 'string') {
+    return {
+      supabaseUrl: photoConfigOrSupabaseUrl,
+      cloudinaryCloudName: '',
+    };
+  }
+
+  if (typeof photoConfigOrSupabaseUrl === 'object' && photoConfigOrSupabaseUrl !== null) {
+    return {
+      supabaseUrl: isNonEmptyString(photoConfigOrSupabaseUrl.supabaseUrl)
+        ? photoConfigOrSupabaseUrl.supabaseUrl.trim()
+        : '',
+      cloudinaryCloudName: isNonEmptyString(photoConfigOrSupabaseUrl.cloudinaryCloudName)
+        ? photoConfigOrSupabaseUrl.cloudinaryCloudName.trim()
+        : '',
+    };
+  }
+
+  return { supabaseUrl: '', cloudinaryCloudName: '' };
+}
+
+function buildCloudinaryPhotoUrl(cloudinaryCloudName, imageReference) {
+  if (!imageReference || imageReference.provider !== CLOUDINARY_IMAGE_PROVIDER) {
+    return PLACEHOLDER_IMAGE_PATH;
+  }
+
+  if (isNonEmptyString(cloudinaryCloudName) && isNonEmptyString(imageReference.publicId)) {
+    const baseUrl = `https://res.cloudinary.com/${cloudinaryCloudName}/${imageReference.resourceType || 'image'}/upload/f_auto,q_auto`;
+    const versionSegment = isNonEmptyString(String(imageReference.version || ''))
+      ? `/v${String(imageReference.version).trim()}`
+      : '';
+    return `${baseUrl}${versionSegment}/${imageReference.publicId}`;
+  }
+
+  if (isNonEmptyString(imageReference.secureUrl)) {
+    return imageReference.secureUrl.trim();
+  }
+
+  return PLACEHOLDER_IMAGE_PATH;
+}
+
+function buildPhotoUrl(photoConfigOrSupabaseUrl, imagePath) {
+  const photoConfig = resolvePhotoConfig(photoConfigOrSupabaseUrl);
+  const imageReference = parseStoredImageReference(imagePath);
+  if (imageReference?.provider === CLOUDINARY_IMAGE_PROVIDER) {
+    return buildCloudinaryPhotoUrl(photoConfig.cloudinaryCloudName, imageReference);
+  }
+
+  if (isNonEmptyString(imagePath) && /^https?:\/\//i.test(imagePath.trim())) {
+    return imagePath.trim();
+  }
+
   const normalizedPath = normalizeStoragePath(imagePath);
   if (!normalizedPath) return PLACEHOLDER_IMAGE_PATH;
-  return `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET_NAME}/${normalizedPath}`;
+  return `${photoConfig.supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET_NAME}/${normalizedPath}`;
 }
 
 function formatPinDate(isoTimestamp) {
@@ -96,8 +181,8 @@ function buildPinInsertPayload(cleanData, imagePath, ownerName) {
   };
 }
 
-function buildSafePinHtml(pin, supabaseUrl) {
-  const photoUrl = buildPhotoUrl(supabaseUrl, pin.image_path);
+function buildSafePinHtml(pin, photoConfigOrSupabaseUrl) {
+  const photoUrl = buildPhotoUrl(photoConfigOrSupabaseUrl, pin.image_path);
   return {
     placeName: escapeHtml(pin.place_name),
     note: escapeHtml(pin.note || ''),
@@ -114,6 +199,9 @@ export {
   normalizeUsername,
   normalizeUsernameIdentity,
   normalizeStoragePath,
+  parseStoredImageReference,
+  isCloudinaryImageReference,
+  buildCloudinaryImageReference,
   buildStoragePath,
   buildPhotoUrl,
   formatPinDate,
@@ -125,4 +213,5 @@ export {
   PIN_COLOR_SEEN,
   STORAGE_BUCKET_NAME,
   PLACEHOLDER_IMAGE_PATH,
+  CLOUDINARY_IMAGE_PROVIDER,
 };

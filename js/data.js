@@ -9,7 +9,7 @@ const PIN_LNG_MIN = -180;
 const PIN_LNG_MAX = 180;
 const USERNAME_MAX = 100;
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
-const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
 // ─── SANITIZATION ────────────────────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ function validateLongitude(rawValue) {
 
 function validatePhoto(file) {
   if (!file) return { valid: true, value: null };
-  if (!PHOTO_ALLOWED_TYPES.includes(file.type)) return { valid: false, error: 'Only JPG, PNG, or WebP photos are allowed.' };
+  if (!PHOTO_ALLOWED_TYPES.includes(file.type)) return { valid: false, error: 'Only JPG, PNG, WebP, HEIC, or HEIF photos are allowed.' };
   if (file.size > PHOTO_MAX_BYTES) return { valid: false, error: 'Photo must be under 5MB.' };
   return { valid: true, value: file };
 }

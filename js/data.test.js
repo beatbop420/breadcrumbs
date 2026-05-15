@@ -69,6 +69,7 @@ expect('validateLongitude rejects non-number', validateLongitude('abc').valid, f
 
 expect('validatePhoto accepts null', validatePhoto(null), { valid: true, value: null });
 expect('validatePhoto accepts jpeg', validatePhoto({ type: 'image/jpeg', size: 1000 }), { valid: true, value: { type: 'image/jpeg', size: 1000 } });
+expect('validatePhoto accepts heic', validatePhoto({ type: 'image/heic', size: 1000 }).valid, true);
 expect('validatePhoto rejects wrong type', validatePhoto({ type: 'image/gif', size: 1000 }).valid, false);
 expect('validatePhoto rejects oversized file', validatePhoto({ type: 'image/jpeg', size: 6 * 1024 * 1024 }).valid, false);
 expect('validatePhoto accepts exactly 5MB', validatePhoto({ type: 'image/png', size: 5 * 1024 * 1024 }).valid, true);

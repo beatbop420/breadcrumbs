@@ -1,4 +1,6 @@
 const CONFIG_STORAGE_KEY = 'breadcrumbs_runtime_config';
+const CLOUDINARY_CLOUD_NAME_PLACEHOLDER = 'YOUR_CLOUDINARY_CLOUD_NAME';
+const CLOUDINARY_UPLOAD_PRESET_PLACEHOLDER = 'YOUR_CLOUDINARY_UPLOAD_PRESET';
 
 function isNonEmptyString(rawValue) {
   return typeof rawValue === 'string' && rawValue.trim().length > 0;
@@ -10,6 +12,10 @@ function normalizeConfigValue(rawValue) {
 
 function isPlaceholderValue(configValue) {
   return configValue === 'YOUR_SUPABASE_URL' || configValue === 'YOUR_SUPABASE_ANON_KEY';
+}
+
+function isCloudinaryPlaceholderValue(configValue) {
+  return configValue === CLOUDINARY_CLOUD_NAME_PLACEHOLDER || configValue === CLOUDINARY_UPLOAD_PRESET_PLACEHOLDER;
 }
 
 function parseStoredConfig(rawValue) {
@@ -42,6 +48,8 @@ function resolveSupabaseConfig() {
 
   const supabaseUrl = normalizeConfigValue(windowConfig.supabaseUrl || storedConfig.supabaseUrl);
   const supabaseAnonKey = normalizeConfigValue(windowConfig.supabaseAnonKey || storedConfig.supabaseAnonKey);
+  const cloudinaryCloudName = normalizeConfigValue(windowConfig.cloudinaryCloudName || storedConfig.cloudinaryCloudName);
+  const cloudinaryUploadPreset = normalizeConfigValue(windowConfig.cloudinaryUploadPreset || storedConfig.cloudinaryUploadPreset);
 
   if (!isNonEmptyString(supabaseUrl) || !isNonEmptyString(supabaseAnonKey)) {
     throw new Error(
@@ -53,16 +61,28 @@ function resolveSupabaseConfig() {
     throw new Error('[Breadcrumbs] Runtime Supabase config still contains placeholder values.');
   }
 
-  return { supabaseUrl, supabaseAnonKey };
+  return {
+    supabaseUrl,
+    supabaseAnonKey,
+    cloudinaryCloudName: isCloudinaryPlaceholderValue(cloudinaryCloudName) ? '' : cloudinaryCloudName,
+    cloudinaryUploadPreset: isCloudinaryPlaceholderValue(cloudinaryUploadPreset) ? '' : cloudinaryUploadPreset,
+  };
 }
 
-function saveRuntimeConfigForTesting(supabaseUrl, supabaseAnonKey) {
+function saveRuntimeConfigForTesting(
+  supabaseUrl,
+  supabaseAnonKey,
+  cloudinaryCloudName = '',
+  cloudinaryUploadPreset = ''
+) {
   if (typeof localStorage === 'undefined') {
     throw new Error('[Breadcrumbs] localStorage is unavailable in this environment.');
   }
 
   const normalizedSupabaseUrl = normalizeConfigValue(supabaseUrl);
   const normalizedSupabaseAnonKey = normalizeConfigValue(supabaseAnonKey);
+  const normalizedCloudinaryCloudName = normalizeConfigValue(cloudinaryCloudName);
+  const normalizedCloudinaryUploadPreset = normalizeConfigValue(cloudinaryUploadPreset);
 
   if (!isNonEmptyString(normalizedSupabaseUrl) || !isNonEmptyString(normalizedSupabaseAnonKey)) {
     throw new Error('[Breadcrumbs] saveRuntimeConfigForTesting requires non-empty Supabase values.');
@@ -73,6 +93,8 @@ function saveRuntimeConfigForTesting(supabaseUrl, supabaseAnonKey) {
     JSON.stringify({
       supabaseUrl: normalizedSupabaseUrl,
       supabaseAnonKey: normalizedSupabaseAnonKey,
+      cloudinaryCloudName: normalizedCloudinaryCloudName,
+      cloudinaryUploadPreset: normalizedCloudinaryUploadPreset,
     })
   );
 }

@@ -1,10 +1,35 @@
-import { normalizeStoragePath, STORAGE_BUCKET_NAME } from './pinLogic.js';
+import {
+  normalizeStoragePath,
+  STORAGE_BUCKET_NAME,
+  buildCloudinaryImageReference,
+  parseStoredImageReference,
+  isCloudinaryImageReference,
+} from './pinLogic.js';
 
 let supabaseClient = null;
+let photoServiceConfig = {
+  cloudinaryCloudName: '',
+  cloudinaryUploadPreset: '',
+};
+const CLOUDINARY_UPLOAD_FOLDER = 'breadcrumbs';
 
-function createSupabaseClient(supabaseUrl, anonKey) {
+function normalizeOptionalConfigValue(rawValue) {
+  return typeof rawValue === 'string' ? rawValue.trim() : '';
+}
+
+function isConfiguredCloudinaryValue(configValue) {
+  return configValue.length > 0
+    && configValue !== 'YOUR_CLOUDINARY_CLOUD_NAME'
+    && configValue !== 'YOUR_CLOUDINARY_UPLOAD_PRESET';
+}
+
+function createSupabaseClient(supabaseUrl, anonKey, runtimeConfig = {}) {
   if (!supabaseUrl || !anonKey) throw new Error('[Breadcrumbs] Supabase URL and anon key are required.');
   supabaseClient = window.supabase.createClient(supabaseUrl, anonKey);
+  photoServiceConfig = {
+    cloudinaryCloudName: normalizeOptionalConfigValue(runtimeConfig.cloudinaryCloudName),
+    cloudinaryUploadPreset: normalizeOptionalConfigValue(runtimeConfig.cloudinaryUploadPreset),
+  };
 }
 
 function getClient() {
@@ -12,7 +37,32 @@ function getClient() {
   return supabaseClient;
 }
 
-function buildStorageUploadOptions(file, upsert) {
+function setPhotoServiceConfigForTesting(runtimeConfig = {}) {
+  photoServiceConfig = {
+    cloudinaryCloudName: normalizeOptionalConfigValue(runtimeConfig.cloudinaryCloudName),
+    cloudinaryUploadPreset: normalizeOptionalConfigValue(runtimeConfig.cloudinaryUploadPreset),
+  };
+}
+
+function resolveUploadFileName(file, normalizedPath) {
+  if (typeof file?.name === 'string' && file.name.trim().length > 0) {
+    return file.name.trim();
+  }
+
+  const fallbackFileName = normalizedPath.split('/').pop();
+  if (typeof fallbackFileName === 'string' && fallbackFileName.trim().length > 0) {
+    return fallbackFileName.trim();
+  }
+
+  return 'photo-upload';
+}
+
+function buildCloudinaryPublicId(normalizedPath) {
+  const normalizedBasePath = normalizedPath.replace(/\.[^.]+$/, '');
+  return `${CLOUDINARY_UPLOAD_FOLDER}/${normalizedBasePath}`;
+}
+
+function buildSupabaseStorageUploadOptions(file, upsert) {
   const uploadOptions = { upsert };
   if (file && typeof file.type === 'string' && file.type.trim().length > 0) {
     uploadOptions.contentType = file.type.trim();
@@ -20,17 +70,66 @@ function buildStorageUploadOptions(file, upsert) {
   return uploadOptions;
 }
 
-async function uploadToStorage(file, storagePath, upsert, actionName) {
-  const client = getClient();
+function buildCloudinaryUploadFormData(file, normalizedPath, actionName) {
+  if (!(file instanceof Blob)) {
+    throw new Error(`[Breadcrumbs] ${actionName} requires a Blob/File photo payload.`);
+  }
+  if (typeof FormData !== 'function') {
+    throw new Error(`[Breadcrumbs] ${actionName} requires FormData support.`);
+  }
+  if (
+    !isConfiguredCloudinaryValue(photoServiceConfig.cloudinaryCloudName)
+    || !isConfiguredCloudinaryValue(photoServiceConfig.cloudinaryUploadPreset)
+  ) {
+    throw new Error(
+      '[Breadcrumbs] Cloudinary upload is not configured. Set cloudinaryCloudName and cloudinaryUploadPreset in BREADCRUMBS_CONFIG.'
+    );
+  }
+
+  const formData = new FormData();
+  formData.append('file', file, resolveUploadFileName(file, normalizedPath));
+  formData.append('upload_preset', photoServiceConfig.cloudinaryUploadPreset);
+  formData.append('public_id', buildCloudinaryPublicId(normalizedPath));
+  return formData;
+}
+
+async function uploadToCloudinary(file, storagePath, actionName) {
+  getClient();
   const normalizedPath = normalizeStoragePath(storagePath);
   if (!normalizedPath) throw new Error(`[Breadcrumbs] ${actionName} requires a valid storage path.`);
+  const formData = buildCloudinaryUploadFormData(file, normalizedPath, actionName);
+  const uploadEndpoint = `https://api.cloudinary.com/v1_1/${photoServiceConfig.cloudinaryCloudName}/image/upload`;
+  const response = await fetch(uploadEndpoint, {
+    method: 'POST',
+    body: formData,
+  });
+  const uploadResult = await response.json().catch(() => null);
 
-  const { error } = await client
-    .storage
+  if (!response.ok) {
+    const cloudinaryErrorMessage = uploadResult?.error?.message || `HTTP ${response.status}`;
+    throw new Error(`[Breadcrumbs] ${actionName} failed: ${cloudinaryErrorMessage}`);
+  }
+
+  if (!uploadResult || typeof uploadResult.public_id !== 'string' || typeof uploadResult.secure_url !== 'string') {
+    throw new Error(`[Breadcrumbs] ${actionName} failed: Cloudinary returned an invalid upload response.`);
+  }
+
+  return buildCloudinaryImageReference({
+    publicId: uploadResult.public_id,
+    version: uploadResult.version,
+    resourceType: uploadResult.resource_type || 'image',
+    secureUrl: uploadResult.secure_url,
+  });
+}
+
+async function restoreToSupabaseStorage(file, storagePath) {
+  const client = getClient();
+  const normalizedPath = normalizeStoragePath(storagePath);
+  if (!normalizedPath) throw new Error('[Breadcrumbs] restorePhoto requires a valid storage path.');
+  const { error } = await client.storage
     .from(STORAGE_BUCKET_NAME)
-    .upload(normalizedPath, file, buildStorageUploadOptions(file, upsert));
-
-  if (error) throw new Error(`[Breadcrumbs] ${actionName} failed: ${error.message}`);
+    .upload(normalizedPath, file, buildSupabaseStorageUploadOptions(file, true));
+  if (error) throw new Error(`[Breadcrumbs] restorePhoto failed: ${error.message}`);
   return normalizedPath;
 }
 
@@ -115,10 +214,13 @@ async function insertView(username, pinId) {
 }
 
 async function uploadPhoto(file, storagePath) {
-  return uploadToStorage(file, storagePath, false, 'uploadPhoto');
+  return uploadToCloudinary(file, storagePath, 'uploadPhoto');
 }
 
 async function downloadPhoto(storagePath) {
+  if (isCloudinaryImageReference(storagePath) || /^https?:\/\//i.test(String(storagePath || '').trim())) {
+    return null;
+  }
   const client = getClient();
   const normalizedPath = normalizeStoragePath(storagePath);
   if (!normalizedPath) throw new Error('[Breadcrumbs] downloadPhoto requires a valid storage path.');
@@ -128,10 +230,18 @@ async function downloadPhoto(storagePath) {
 }
 
 async function restorePhoto(file, storagePath) {
-  return uploadToStorage(file, storagePath, true, 'restorePhoto');
+  const structuredReference = parseStoredImageReference(storagePath);
+  if (structuredReference?.provider === 'cloudinary' || /^https?:\/\//i.test(String(storagePath || '').trim())) {
+    return storagePath;
+  }
+
+  return restoreToSupabaseStorage(file, storagePath);
 }
 
 async function deletePhoto(storagePath) {
+  if (isCloudinaryImageReference(storagePath) || /^https?:\/\//i.test(String(storagePath || '').trim())) {
+    return null;
+  }
   const client = getClient();
   const normalizedPath = normalizeStoragePath(storagePath);
   if (!normalizedPath) throw new Error('[Breadcrumbs] deletePhoto requires a valid storage path.');
@@ -188,6 +298,7 @@ export {
   createSupabaseClient,
   getClient,
   setClientForTesting,
+  setPhotoServiceConfigForTesting,
   signInAnonymously,
   ensureAnonymousSession,
   fetchAllPins,

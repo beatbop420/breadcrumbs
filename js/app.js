@@ -308,7 +308,7 @@ async function handlePinEdit(pin) {
 
 async function handlePinClick(pin) {
   if (!runtimeConfig) return;
-  const safePin = buildSafePinHtml(pin, runtimeConfig.supabaseUrl);
+  const safePin = buildSafePinHtml(pin, runtimeConfig);
   const canOwn = isPinOwner(pin, currentUsername);
   showViewModal(safePin, {
     canDelete: canOwn,
@@ -398,7 +398,7 @@ async function resolveUsername() {
 async function initApp() {
   try {
     runtimeConfig = resolveSupabaseConfig();
-    createSupabaseClient(runtimeConfig.supabaseUrl, runtimeConfig.supabaseAnonKey);
+    createSupabaseClient(runtimeConfig.supabaseUrl, runtimeConfig.supabaseAnonKey, runtimeConfig);
     initMap(handleMapTap);
     initCharCounters();
     initGeocoding();

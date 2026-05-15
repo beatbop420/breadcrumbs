@@ -5,6 +5,9 @@ import {
   normalizeUsername,
   normalizeUsernameIdentity,
   normalizeStoragePath,
+  parseStoredImageReference,
+  isCloudinaryImageReference,
+  buildCloudinaryImageReference,
   buildStoragePath,
   buildPhotoUrl,
   formatPinDate,
@@ -59,6 +62,19 @@ expect('normalizeStoragePath keeps bucket-relative path unchanged', normalizeSto
 expect('normalizeStoragePath trims whitespace', normalizeStoragePath('  pins/abc.jpg  '), 'abc.jpg');
 expect('normalizeStoragePath returns empty string for non-string', normalizeStoragePath(null), '');
 
+// ─── Cloudinary image references ─────────────────────────────────────────────
+
+const cloudinaryReference = buildCloudinaryImageReference({
+  publicId: 'breadcrumbs/pin-123',
+  version: '1778',
+  secureUrl: 'https://res.cloudinary.com/demo/image/upload/v1778/breadcrumbs/pin-123.jpg',
+});
+const parsedCloudinaryReference = parseStoredImageReference(cloudinaryReference);
+
+expect('parseStoredImageReference parses Cloudinary JSON metadata', parsedCloudinaryReference.publicId, 'breadcrumbs/pin-123');
+expect('isCloudinaryImageReference detects Cloudinary metadata', isCloudinaryImageReference(cloudinaryReference), true);
+expect('isCloudinaryImageReference ignores legacy paths', isCloudinaryImageReference('pins/abc.jpg'), false);
+
 // ─── buildPhotoUrl ────────────────────────────────────────────────────────────
 
 const supabaseUrl = 'https://test.supabase.co';
@@ -67,6 +83,16 @@ expect('buildPhotoUrl returns placeholder for null imagePath', buildPhotoUrl(sup
 expect('buildPhotoUrl returns placeholder for empty imagePath', buildPhotoUrl(supabaseUrl, ''), PLACEHOLDER_IMAGE_PATH);
 expect('buildPhotoUrl builds correct URL from bucket-relative path', buildPhotoUrl(supabaseUrl, 'abc.jpg'), 'https://test.supabase.co/storage/v1/object/public/pins/abc.jpg');
 expect('buildPhotoUrl normalizes old bucket-prefixed paths', buildPhotoUrl(supabaseUrl, 'pins/abc.jpg'), 'https://test.supabase.co/storage/v1/object/public/pins/abc.jpg');
+expect(
+  'buildPhotoUrl builds optimized Cloudinary URLs when cloud name is available',
+  buildPhotoUrl({ supabaseUrl, cloudinaryCloudName: 'family-cloud' }, cloudinaryReference),
+  'https://res.cloudinary.com/family-cloud/image/upload/f_auto,q_auto/v1778/breadcrumbs/pin-123'
+);
+expect(
+  'buildPhotoUrl falls back to the stored Cloudinary secure URL when cloud name is missing',
+  buildPhotoUrl({ supabaseUrl }, cloudinaryReference),
+  'https://res.cloudinary.com/demo/image/upload/v1778/breadcrumbs/pin-123.jpg'
+);
 
 // ─── ownership helpers ───────────────────────────────────────────────────────
 
@@ -127,5 +153,11 @@ expect('buildSafePinHtml marks placeholder images as not real photos', safePin.h
 
 const safePinWithPhoto = buildSafePinHtml({ ...pin, image_path: 'trip.webp' }, supabaseUrl);
 expect('buildSafePinHtml marks stored images as real photos', safePinWithPhoto.hasPhoto, true);
+
+const safeCloudinaryPin = buildSafePinHtml(
+  { ...pin, image_path: cloudinaryReference },
+  { supabaseUrl, cloudinaryCloudName: 'family-cloud' }
+);
+expect('buildSafePinHtml marks Cloudinary photos as real photos', safeCloudinaryPin.hasPhoto, true);
 
 summarizeResults();
