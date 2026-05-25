@@ -69,6 +69,27 @@ Breadcrumbs does not use shell environment variables for runtime configuration. 
 
 For local testing, the same values can be provided in `js/config.local.js`.
 
+## Key files (for code review)
+
+| File | What it is |
+|---|---|
+| `index.html` | App shell — config, map mount point, form HTML, service worker registration. |
+| `js/app.js` | Entry point. Wires everything together on load. |
+| `js/map.js` | Leaflet map setup, marker management, click-to-drop-pin flow. |
+| `js/ui.js` | All UI rendering — pin cards, photo viewer, form state, toasts, crow animation. |
+| `js/data.js` | All Supabase reads and writes. The data access layer. |
+| `js/pinLogic.js` | Business rules — ownership checks, pin validation, legacy pin handling. |
+| `js/photoProcessing.js` | Cloudinary direct upload, EXIF stripping, file validation. |
+| `js/supabase.js` | Supabase client init. |
+| `js/username.js` | Name-based identity (no auth — trust-based for family use). |
+| `js/offlineCache.js` | Caches pins to localStorage for offline viewing. |
+| `js/config.js` | Runtime config shape + defaults. |
+| `sw.js` | Service worker for offline/PWA. |
+| `css/style.css` | All styles. |
+| `sql/` | Supabase schema + RLS policies. |
+
+---
+
 ## Known Limitations
 
 - Ownership is name-based and trust-based, which is fine for a small family group but not for hostile users.
