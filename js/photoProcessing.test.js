@@ -92,6 +92,32 @@ try {
 
 expect('normalizePhotoForUpload throws on undecodable images', Boolean(normalizeError?.includes('dimensions')), true);
 
+let timeoutCleared = false;
+let timeoutError = null;
+try {
+  await normalizePhotoForUpload(
+    { type: 'image/heic', name: 'stuck.HEIC' },
+    {
+      createObjectUrl: () => 'blob:stuck',
+      revokeObjectUrl: () => {},
+      createImageBitmapFn: () => new Promise(() => {}),
+      FileCtor: MockFile,
+      normalizationTimeoutMs: 50,
+      setTimeoutFn: (handler) => {
+        queueMicrotask(handler);
+        return 'timer-1';
+      },
+      clearTimeoutFn: (timerId) => {
+        timeoutCleared = timerId === 'timer-1';
+      },
+    }
+  );
+} catch (err) {
+  timeoutError = err.message;
+}
+expect('normalizePhotoForUpload times out stuck HEIC decoding', Boolean(timeoutError?.includes('timed out')), true);
+expect('normalizePhotoForUpload clears the normalization timeout', timeoutCleared, true);
+
 delete globalThis.__drawImageArgs;
 
 summarizeResults();

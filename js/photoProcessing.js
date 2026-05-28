@@ -3,6 +3,7 @@ const PHOTO_NORMALIZATION_INPUT_EXTENSIONS = ['heic', 'heif'];
 const PHOTO_NORMALIZATION_OUTPUT_TYPE = 'image/jpeg';
 const PHOTO_NORMALIZATION_OUTPUT_EXTENSION = 'jpg';
 const PHOTO_NORMALIZATION_OUTPUT_QUALITY = 0.92;
+const PHOTO_NORMALIZATION_TIMEOUT_MS = 10000;
 
 function normalizePhotoMimeType(rawMimeType) {
   return typeof rawMimeType === 'string' ? rawMimeType.trim().toLowerCase() : '';
@@ -68,6 +69,28 @@ function createCanvasElement({ createCanvasFn = null } = {}) {
   throw new Error('[Breadcrumbs] No canvas implementation is available for photo normalization.');
 }
 
+async function withTimeout(workPromise, timeoutMs, errorMessage, {
+  setTimeoutFn = globalThis.setTimeout,
+  clearTimeoutFn = globalThis.clearTimeout,
+} = {}) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || typeof setTimeoutFn !== 'function') {
+    return workPromise;
+  }
+
+  let timerId = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timerId = setTimeoutFn(() => reject(new Error(errorMessage)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([workPromise, timeoutPromise]);
+  } finally {
+    if (timerId !== null && typeof clearTimeoutFn === 'function') {
+      clearTimeoutFn(timerId);
+    }
+  }
+}
+
 async function canvasToBlob(canvas, type, quality) {
   if (typeof canvas.convertToBlob === 'function') {
     return canvas.convertToBlob({ type, quality });
@@ -102,6 +125,9 @@ async function normalizePhotoForUpload(file, {
   createCanvasFn = null,
   canvasToBlobFn = canvasToBlob,
   FileCtor = globalThis.File,
+  normalizationTimeoutMs = PHOTO_NORMALIZATION_TIMEOUT_MS,
+  setTimeoutFn = globalThis.setTimeout,
+  clearTimeoutFn = globalThis.clearTimeout,
 } = {}) {
   if (!requiresPhotoNormalization(file)) return file;
   if (typeof FileCtor !== 'function') {
@@ -112,7 +138,12 @@ async function normalizePhotoForUpload(file, {
   let imageSource = null;
 
   try {
-    imageSource = await decodeImageSource(file, objectUrl, { createImageBitmapFn, ImageCtor });
+    imageSource = await withTimeout(
+      decodeImageSource(file, objectUrl, { createImageBitmapFn, ImageCtor }),
+      normalizationTimeoutMs,
+      '[Breadcrumbs] Photo normalization timed out while decoding the selected image.',
+      { setTimeoutFn, clearTimeoutFn }
+    );
     const { width, height } = getImageDimensions(imageSource);
     const canvas = createCanvasElement({ createCanvasFn });
     canvas.width = width;
