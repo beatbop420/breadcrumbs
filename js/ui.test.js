@@ -3,6 +3,7 @@ import {
   parseCssTimeToMs,
   getTransitionTimeoutMs,
   getSelectedPhotoStatus,
+  buildUploadDebugInfo,
   buildActiveUsernameLabel,
   getAddModalIdleLabel,
   resolveExistingPinPlaceName,
@@ -27,7 +28,9 @@ expect('getTransitionTimeoutMs returns 0 when transition values are empty', getT
 // ─── getSelectedPhotoStatus ────────────────────────────────────────────────
 
 expect('getSelectedPhotoStatus returns default text without a file', getSelectedPhotoStatus(null), 'No photo selected');
-expect('getSelectedPhotoStatus returns the selected filename', getSelectedPhotoStatus({ name: 'road-trip.webp' }), 'Selected: road-trip.webp');
+expect('getSelectedPhotoStatus returns the selected filename with debug details', getSelectedPhotoStatus({ name: 'road-trip.webp', type: 'image/webp', size: 2 * 1024 * 1024 }), 'Selected: road-trip.webp (image/webp, 2.00 MB)');
+expect('buildUploadDebugInfo returns no-photo debug text', buildUploadDebugInfo(null), 'Upload debug: no photo selected');
+expect('buildUploadDebugInfo includes stage, type, and size', buildUploadDebugInfo({ name: 'IMG_1.HEIC', type: 'image/heic', size: 3145728 }, 'selected'), 'Upload debug: selected | IMG_1.HEIC | image/heic | 3.00 MB');
 
 // ─── active username badge ──────────────────────────────────────────────────
 

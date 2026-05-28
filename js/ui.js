@@ -8,6 +8,7 @@ const PHOTO_UPLOAD_DEFAULT_STATUS = 'No photo selected';
 const ADD_SUBMIT_DEFAULT_LABEL = 'Save Memory';
 const ADD_SUBMIT_EDIT_LABEL = 'Save Changes';
 const ADD_SUBMIT_LOADING_LABEL = 'Saving...';
+const BYTES_PER_MB = 1024 * 1024;
 const ADD_MODAL_COUNTER_CONFIGS = [
   { inputId: 'add-note', counterId: 'note-counter', maxLength: PIN_NOTE_MAX },
   { inputId: 'add-place-name', counterId: 'place-name-counter', maxLength: PIN_PLACE_NAME_MAX },
@@ -189,11 +190,32 @@ function syncAddModalCounters() {
   });
 }
 
+function formatDebugFileSize(file) {
+  const fileSize = Number(file?.size || 0);
+  if (!Number.isFinite(fileSize) || fileSize <= 0) return 'unknown size';
+  return `${(fileSize / BYTES_PER_MB).toFixed(2)} MB`;
+}
+
+function formatDebugFileType(file) {
+  return typeof file?.type === 'string' && file.type.trim().length > 0
+    ? file.type.trim()
+    : 'unknown type';
+}
+
+function buildUploadDebugInfo(file, stage = '') {
+  if (!file) return 'Upload debug: no photo selected';
+  const fileName = typeof file.name === 'string' && file.name.trim().length > 0
+    ? file.name.trim()
+    : 'unnamed file';
+  const stageLabel = stage ? `${stage} | ` : '';
+  return `Upload debug: ${stageLabel}${fileName} | ${formatDebugFileType(file)} | ${formatDebugFileSize(file)}`;
+}
+
 function getSelectedPhotoStatus(file) {
   if (!file || typeof file.name !== 'string' || file.name.trim().length === 0) {
     return PHOTO_UPLOAD_DEFAULT_STATUS;
   }
-  return `Selected: ${file.name.trim()}`;
+  return `Selected: ${file.name.trim()} (${formatDebugFileType(file)}, ${formatDebugFileSize(file)})`;
 }
 
 function revokeAddPhotoPreviewUrl() {
@@ -262,28 +284,39 @@ function initializeAddPinForm() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const rawFormData = buildAddPinFormData();
+    const originalPhoto = rawFormData.photo;
+    if (originalPhoto) {
+      setElementText('add-error', buildUploadDebugInfo(originalPhoto, 'selected'));
+    }
     if (requiresPhotoNormalization(rawFormData.photo)) {
       try {
+        setElementText('add-error', buildUploadDebugInfo(rawFormData.photo, 'normalizing'));
         rawFormData.photo = await normalizePhotoForUpload(rawFormData.photo);
+        setElementText('add-error', buildUploadDebugInfo(rawFormData.photo, 'normalized'));
       } catch (err) {
         console.warn('[Breadcrumbs] normalizePhotoForUpload failed, falling back to raw upload:', err);
+        setElementText('add-error', `${buildUploadDebugInfo(originalPhoto, 'normalization failed')} | ${err.message}`);
       }
     }
     const validationResult = validatePinForm(rawFormData);
 
     if (!validationResult.valid) {
-      setElementText('add-error', validationResult.errors.join(' '));
+      setElementText('add-error', `${validationResult.errors.join(' ')} ${buildUploadDebugInfo(rawFormData.photo, 'validation failed')}`);
       return;
     }
 
-    setElementText('add-error', '');
+    if (rawFormData.photo) {
+      setElementText('add-error', buildUploadDebugInfo(rawFormData.photo, 'uploading'));
+    } else {
+      setElementText('add-error', '');
+    }
     if (typeof addPinSubmitHandler !== 'function') return;
 
     try {
       await addPinSubmitHandler(validationResult.cleanData);
     } catch (err) {
       console.error('[Breadcrumbs] addPinSubmitHandler failed:', err);
-      showAddModalSubmitError('Something went wrong. Please try again.');
+      showAddModalSubmitError(`Something went wrong. ${buildUploadDebugInfo(validationResult.cleanData.photo, 'submit failed')}`);
     }
   });
 }
@@ -438,6 +471,7 @@ export {
   parseCssTimeToMs,
   getTransitionTimeoutMs,
   getSelectedPhotoStatus,
+  buildUploadDebugInfo,
   buildActiveUsernameLabel,
   getAddModalIdleLabel,
   resolveExistingPinPlaceName,

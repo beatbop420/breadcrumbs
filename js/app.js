@@ -104,20 +104,31 @@ function initFab() {
   });
 }
 
-function buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath) {
+function formatSubmitDebugInfo(cleanData, submitStage, err) {
+  const photo = cleanData?.photo || null;
+  if (!photo) return `Debug: stage=${submitStage}, no photo`;
+  const fileName = typeof photo.name === 'string' && photo.name.trim().length > 0 ? photo.name.trim() : 'unnamed file';
+  const fileType = typeof photo.type === 'string' && photo.type.trim().length > 0 ? photo.type.trim() : 'unknown type';
+  const fileSizeMb = Number.isFinite(Number(photo.size)) ? (Number(photo.size) / (1024 * 1024)).toFixed(2) : 'unknown';
+  const errorMessage = err?.message ? `, error=${err.message}` : '';
+  return `Debug: stage=${submitStage}, file=${fileName}, type=${fileType}, size=${fileSizeMb} MB${errorMessage}`;
+}
+
+function buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath, cleanData = null, err = null) {
+  const debugInfo = formatSubmitDebugInfo(cleanData, submitStage, err);
   if (submitStage === 'upload') {
-    return 'Photo didn\'t upload. Choose it again and try saving.';
+    return `Photo didn't upload. ${debugInfo}`;
   }
 
   if (submitStage === 'insert' && hadSelectedPhoto && uploadedImagePath) {
-    return 'Didn\'t save. Choose the photo again and try again.';
+    return `Didn't save after upload. ${debugInfo}`;
   }
 
   if (submitStage === 'insert') {
-    return 'Didn\'t save. Try again.';
+    return `Didn't save. ${debugInfo}`;
   }
 
-  return 'Something went wrong. Please refresh and try again.';
+  return `Something went wrong. ${debugInfo}`;
 }
 
 async function cleanupUploadedPhoto(uploadedImagePath) {
@@ -157,7 +168,7 @@ async function handlePinSubmit(cleanData, tempMarker) {
       await cleanupUploadedPhoto(uploadedImagePath);
     }
 
-    const failureMessage = buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath);
+    const failureMessage = buildSubmitFailureMessage(submitStage, hadSelectedPhoto, uploadedImagePath, cleanData, err);
     setAddModalSubmitting(false);
     showAddModalSubmitError(failureMessage);
   }
