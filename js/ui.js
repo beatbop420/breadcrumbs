@@ -224,6 +224,22 @@ function revokeAddPhotoPreviewUrl() {
   addPhotoPreviewObjectUrl = null;
 }
 
+function setAddPhotoPreviewFromUrl(url) {
+  revokeAddPhotoPreviewUrl();
+  const previewImage = document.getElementById('add-photo-preview');
+  const previewWrap = document.getElementById('add-photo-preview-wrap');
+  const photoLabel = document.getElementById('add-photo-label');
+  const photoTrigger = document.getElementById('add-photo-trigger');
+  const photoStatus = document.getElementById('add-photo-status');
+
+  previewImage.src = url;
+  previewImage.alt = 'Selected photo preview';
+  previewWrap.classList.remove('hidden');
+  photoLabel.textContent = 'Change photo';
+  photoTrigger.classList.add('upload-btn--selected');
+  photoStatus.textContent = 'Photo ready (uploaded via Shortcut)';
+}
+
 function setAddPhotoPreview(file) {
   const previewImage = document.getElementById('add-photo-preview');
 
@@ -490,4 +506,5 @@ export {
   hideViewModal,
   confirmDeleteMemory,
   initCharCounters,
+  setAddPhotoPreviewFromUrl,
 };

@@ -9,6 +9,7 @@ import {
   resolveExistingPinPlaceName,
   setActiveUsernameDisplay,
   showViewModal,
+  setAddPhotoPreviewFromUrl,
 } from './ui.js';
 
 // ─── parseCssTimeToMs ────────────────────────────────────────────────────────
@@ -76,6 +77,11 @@ const mockElements = {
   'modal-view': createMockElement(['hidden']),
   'active-username-badge': createMockElement(['hidden']),
   'active-username-value': createMockElement(),
+  'add-photo-preview': createMockElement(),
+  'add-photo-preview-wrap': createMockElement(['hidden']),
+  'add-photo-label': createMockElement(),
+  'add-photo-trigger': createMockElement(),
+  'add-photo-status': createMockElement(),
 };
 
 globalThis.document = {
@@ -103,6 +109,15 @@ expect('showViewModal keeps the polaroid visible for placeholder images', mockEl
 expect('showViewModal sets the placeholder photo src', mockElements['view-photo'].src, 'assets/pin-placeholder.svg');
 expect('showViewModal keeps placeholder images out of the lightbox flow', mockElements['view-photo'].style.cursor, 'default');
 expect('showViewModal shows the view modal', mockElements['modal-view'].classList.contains('hidden'), false);
+
+// ─── setAddPhotoPreviewFromUrl ────────────────────────────────────────────────
+
+setAddPhotoPreviewFromUrl('https://res.cloudinary.com/drijk2xzu/image/upload/v1/sample.jpg');
+expect('setAddPhotoPreviewFromUrl sets preview image src', mockElements['add-photo-preview'].src, 'https://res.cloudinary.com/drijk2xzu/image/upload/v1/sample.jpg');
+expect('setAddPhotoPreviewFromUrl shows preview wrap', mockElements['add-photo-preview-wrap'].classList.contains('hidden'), false);
+expect('setAddPhotoPreviewFromUrl updates label to Change photo', mockElements['add-photo-label'].textContent, 'Change photo');
+expect('setAddPhotoPreviewFromUrl marks trigger as selected', mockElements['add-photo-trigger'].classList.contains('upload-btn--selected'), true);
+expect('setAddPhotoPreviewFromUrl sets shortcut status text', mockElements['add-photo-status'].textContent, 'Photo ready (uploaded via Shortcut)');
 
 globalThis.document = originalDocument;
 

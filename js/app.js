@@ -1,15 +1,16 @@
 import { createSupabaseClient, ensureAnonymousSession, fetchAllPins, ensureAccount, insertPin, updatePin, fetchSeenPinIds, insertView, uploadPhoto, downloadPhoto, restorePhoto, deletePhoto, deletePin, subscribeToNewPins } from './supabase.js';
 import { resolveSupabaseConfig } from './config.js';
 import { readCachedPins, saveCachedPins, upsertCachedPin, removeCachedPin, readCachedSeenPinIds, saveCachedSeenPinIds } from './offlineCache.js';
-import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner } from './pinLogic.js';
+import { buildPinInsertPayload, buildStoragePath, buildSafePinHtml, isPinOwner, buildCloudinaryImageReference } from './pinLogic.js';
 import { getStoredUsername, saveUsername, hasStoredUsername } from './username.js';
 import { initMap, renderPinMarker, updateMarkerColor, addTemporaryMarker, removeTemporaryMarker, moveTemporaryMarker, animatePinEntrance, animatePinDelete, getMapCenter } from './map.js';
-import { showToast, showSplash, hideSplash, showUsernamePrompt, hideUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters, setActiveUsernameDisplay } from './ui.js';
+import { showToast, showSplash, hideSplash, showUsernamePrompt, hideUsernamePrompt, showAddModal, hideAddModal, showAddModalSubmitError, setAddModalSubmitting, showViewModal, hideViewModal, confirmDeleteMemory, initCharCounters, setActiveUsernameDisplay, setAddPhotoPreviewFromUrl } from './ui.js';
 
 const pinMarkers = new Map();
 let seenPinSet = new Set();
 let currentUsername = null;
 let runtimeConfig = null;
+let prefillPhotoUrl = null;
 
 async function geocodePlace(query) {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
@@ -80,6 +81,10 @@ function openAddModal(latlng) {
     await handlePinSubmit(cleanData, tempMarker);
   });
 
+  if (prefillPhotoUrl) {
+    setAddPhotoPreviewFromUrl(prefillPhotoUrl);
+  }
+
   function closeModal() {
     removeTemporaryMarker(tempMarker);
     hideAddModal();
@@ -148,10 +153,13 @@ async function handlePinSubmit(cleanData, tempMarker) {
 
   try {
     await ensureAnonymousSession();
-    if (hadSelectedPhoto) {
+    if (cleanData.photo) {
       submitStage = 'upload';
       const storagePath = buildStoragePath(cleanData.photo);
       uploadedImagePath = await uploadPhoto(cleanData.photo, storagePath);
+    } else if (prefillPhotoUrl) {
+      uploadedImagePath = buildCloudinaryImageReference({ secureUrl: prefillPhotoUrl });
+      prefillPhotoUrl = null;
     }
 
     submitStage = 'insert';
@@ -416,6 +424,13 @@ async function initApp() {
     showSplash();
 
     await resolveUsername();
+
+    const photoParam = new URLSearchParams(window.location.search).get('photo');
+    if (photoParam) {
+      prefillPhotoUrl = photoParam.trim();
+      history.replaceState({}, '', window.location.pathname);
+    }
+
     initUsernameBadgeClick();
     try {
       seenPinSet = await fetchSeenPinIds(currentUsername);

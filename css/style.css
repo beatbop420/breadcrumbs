@@ -282,6 +282,11 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
   line-height: 1.4;
 }
 
+.upload-hint__link {
+  color: var(--color-sage);
+  opacity: 1;
+}
+
 .photo-preview {
   margin-top: 12px;
   border-radius: 10px;
