@@ -1,11 +1,12 @@
 # Breadcrumbs — Phase 5 Traceability And Audit
-**Date:** 2026-05-14
+**Date:** 2026-05-28
 
 ## High-Signal Findings
 
-- The main local saved milestone is `8bfa748`, with additional closeout cleanup applied afterward in the working tree.
-- The biggest non-security drift was documentation, not core runtime behavior.
-- The iPhone photo path depends on preserving the native label-based picker flow and MIME-aware storage handling.
+- The current local saved milestone is `c113379`.
+- The biggest current drift was stale documentation after the Cloudinary upload pivot, not core runtime behavior.
+- The active new-photo path is Cloudinary direct upload from the browser; Supabase stores pin rows and still supports legacy storage paths.
+- The old Supabase Edge Function draft was removed and should not be treated as the current plan.
 - The biggest standing security risk is still the trust-based identity and broad server-side delete/storage policy model.
 
 ## Traceability Snapshot
@@ -21,6 +22,7 @@
 ## Follow-Up Closeout Notes
 
 - Edit-flow cleanup and regression coverage remain in place.
-- The photo upload path now keeps the earlier iPhone-safe picker behavior and also uses `file.type` to choose storage extensions and upload content types.
-- Local automated verification passes after this follow-up cleanup.
-- The local fix set is still not live on GitHub Pages until the next push.
+- The photo upload path now uses Cloudinary for new uploads and stores structured Cloudinary references in Supabase.
+- Local automated verification passes after the Cloudinary follow-up work.
+- Cloudinary values are already configured in `index.html` and `js/config.local.js`.
+- Remaining manual QA is real-device upload verification on iPhone and Android.

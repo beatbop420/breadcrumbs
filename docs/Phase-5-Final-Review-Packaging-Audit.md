@@ -3,7 +3,7 @@
 **Commit audited:** `8bfa748`  
 **Working tree at audit time:** clean
 
-**Superseded note:** This file records the pre-cleanup audit against commit `8bfa748`. Follow-up cleanup on 2026-05-14 refreshed the architecture, final review, traceability, and handoff docs and cleaned up the iPhone photo upload path.
+**Superseded note:** This file records the pre-cleanup audit against commit `8bfa748`. Follow-up cleanup on 2026-05-14 refreshed the architecture, final review, traceability, and handoff docs and cleaned up the iPhone photo upload path. A second docs refresh on 2026-05-28 updated the active closeout docs for the Cloudinary photo-upload path, current commit `c113379`, and current verification totals. Treat this file as historical evidence, not the latest project status.
 
 ## 1. High-Signal Findings
 

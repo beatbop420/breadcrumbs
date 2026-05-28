@@ -29,7 +29,8 @@ Current implemented behavior:
 | Map | Leaflet 1.9.4 |
 | Tile source | Carto Voyager raster tiles |
 | Backend client | Supabase JS 2.49.1 via CDN |
-| Backend services | Supabase auth, database, storage, realtime |
+| Backend services | Supabase auth, database, legacy storage compatibility, realtime |
+| New photo storage | Cloudinary direct browser uploads |
 | Hosting | GitHub Pages |
 | Offline support | Service Worker + `localStorage` cache |
 | Local verification tooling | Node.js scripts + ESLint |
@@ -59,7 +60,8 @@ Browser-local state:
 
 Remote dependencies:
 - Supabase database
-- Supabase storage bucket `pins`
+- Supabase storage bucket `pins` for legacy photo compatibility
+- Cloudinary for new photo uploads and optimized photo URLs
 - Supabase anonymous auth
 - Supabase realtime
 - Carto map tiles
@@ -75,6 +77,7 @@ Trust model:
 
 - Typed place names are not just labels anymore; geocoding in [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:14) can move the temporary marker.
 - Edit support exists in the current UI and backend flow through [index.html](/home/petra/Desktop/breadcrumbs/index.html:118), [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:266), and [supabase.js](/home/petra/Desktop/breadcrumbs/js/supabase.js:134).
+- New photo uploads use Cloudinary from [supabase.js](/home/petra/Desktop/breadcrumbs/js/supabase.js:96); Supabase stores the resulting structured image reference with the pin.
 - Pins are loaded after the splash button is pressed, not behind the splash.
 - Offline behavior relies on both service-worker caching and `localStorage` pin caching.
 
@@ -107,11 +110,12 @@ Those drifts were accounted for in later phase documents and supporting docs wer
 - The identity model is still name-based and trust-based. That is acceptable only for a small trusted family group.
 - The server-side delete and storage policy model remains broader than the UI wording implies. That is an accepted Phase 4 waiver, not an accidental mismatch.
 - `manifest.json` and `sw.js` are intentionally coupled to the GitHub Pages `/breadcrumbs/` path.
-- iPhone photo picking depends on four implementation choices that should not be casually reverted:
+- iPhone photo picking depends on these implementation choices that should not be casually reverted:
   - nested `<label>` + `<input type="file">` activation
   - a 1px visually hidden input instead of `display: none`
-  - explicit `accept="image/jpeg,image/png,image/webp"` so iPhone library picks arrive in supported formats
-  - storage-path generation and storage upload content types based on `file.type`, not only the original filename
+  - photo normalization for HEIC/HEIF before upload where browser support allows it
+  - Cloudinary direct upload for new photos
+- The old `supabase/functions/upload-photo` Edge Function draft was removed; it is not part of the current deployed upload flow.
 
 ## 10. Manual QA Still Worth Running
 
