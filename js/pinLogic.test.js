@@ -84,14 +84,31 @@ expect('buildPhotoUrl returns placeholder for empty imagePath', buildPhotoUrl(su
 expect('buildPhotoUrl builds correct URL from bucket-relative path', buildPhotoUrl(supabaseUrl, 'abc.jpg'), 'https://test.supabase.co/storage/v1/object/public/pins/abc.jpg');
 expect('buildPhotoUrl normalizes old bucket-prefixed paths', buildPhotoUrl(supabaseUrl, 'pins/abc.jpg'), 'https://test.supabase.co/storage/v1/object/public/pins/abc.jpg');
 expect(
-  'buildPhotoUrl builds optimized Cloudinary URLs when cloud name is available',
+  'buildPhotoUrl uses secureUrl directly when available (even when cloud name is present)',
   buildPhotoUrl({ supabaseUrl, cloudinaryCloudName: 'family-cloud' }, cloudinaryReference),
-  'https://res.cloudinary.com/family-cloud/image/upload/f_auto,q_auto/v1778/breadcrumbs/pin-123'
+  'https://res.cloudinary.com/demo/image/upload/v1778/breadcrumbs/pin-123.jpg'
 );
 expect(
-  'buildPhotoUrl falls back to the stored Cloudinary secure URL when cloud name is missing',
+  'buildPhotoUrl uses secureUrl directly when cloud name is missing',
   buildPhotoUrl({ supabaseUrl }, cloudinaryReference),
   'https://res.cloudinary.com/demo/image/upload/v1778/breadcrumbs/pin-123.jpg'
+);
+
+const cloudinaryReferenceNoSecureUrl = buildCloudinaryImageReference({
+  publicId: 'breadcrumbs/pin-456',
+  version: '1778',
+});
+expect(
+  'buildPhotoUrl builds URL from publicId when secureUrl is absent',
+  buildPhotoUrl({ supabaseUrl, cloudinaryCloudName: 'family-cloud' }, cloudinaryReferenceNoSecureUrl),
+  'https://res.cloudinary.com/family-cloud/image/upload/v1778/breadcrumbs/pin-456'
+);
+
+const cloudinaryReferenceEmpty = buildCloudinaryImageReference({ publicId: '', version: '' });
+expect(
+  'buildPhotoUrl returns placeholder when Cloudinary reference has neither secureUrl nor publicId',
+  buildPhotoUrl({ supabaseUrl, cloudinaryCloudName: 'family-cloud' }, cloudinaryReferenceEmpty),
+  PLACEHOLDER_IMAGE_PATH
 );
 
 // ─── ownership helpers ───────────────────────────────────────────────────────

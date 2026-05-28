@@ -119,16 +119,16 @@ function buildCloudinaryPhotoUrl(cloudinaryCloudName, imageReference) {
     return PLACEHOLDER_IMAGE_PATH;
   }
 
+  if (isNonEmptyString(imageReference.secureUrl)) {
+    return imageReference.secureUrl.trim();
+  }
+
   if (isNonEmptyString(cloudinaryCloudName) && isNonEmptyString(imageReference.publicId)) {
-    const baseUrl = `https://res.cloudinary.com/${cloudinaryCloudName}/${imageReference.resourceType || 'image'}/upload/f_auto,q_auto`;
+    const baseUrl = `https://res.cloudinary.com/${cloudinaryCloudName}/${imageReference.resourceType || 'image'}/upload`;
     const versionSegment = isNonEmptyString(String(imageReference.version || ''))
       ? `/v${String(imageReference.version).trim()}`
       : '';
     return `${baseUrl}${versionSegment}/${imageReference.publicId}`;
-  }
-
-  if (isNonEmptyString(imageReference.secureUrl)) {
-    return imageReference.secureUrl.trim();
   }
 
   return PLACEHOLDER_IMAGE_PATH;
