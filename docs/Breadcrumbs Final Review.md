@@ -1,6 +1,6 @@
 # Breadcrumbs — Final Review
 **Date:** 2026-05-28
-**Status:** COMPLETE
+**Status:** COMPLETE WITH ACTIVE IPHONE LIBRARY FOLLOW-UP
 
 ## 1. Scope Check
 
@@ -14,15 +14,16 @@ Completed across the review and follow-up cleanup:
 
 ## 2. What Changed
 
-- The current saved local milestone is `c113379` (`Add key files section to README for code review orientation`).
-- New photo uploads now go directly to Cloudinary. Supabase still stores pin data; legacy Supabase Storage photo paths remain supported for read/restore/delete compatibility.
-- Follow-up cleanup kept the good UI refactors, deduplicated storage upload code, and hardened photo storage naming so converted iPhone photos use `file.type` instead of blindly trusting the original filename extension.
-- Cloudinary config is already present in `index.html` and `js/config.local.js`.
+- Latest pushed photo-investigation code milestone is `5df3b52` (`Simplify photo input accept list to unblock iPhone library selection`).
+- New photo uploads go directly to Cloudinary. Supabase still stores pin data; legacy Supabase Storage photo paths remain supported for read/restore/delete compatibility.
+- Cloudinary display now prefers the returned `secureUrl`, service-worker uploads bypass cache handling, HEIC/HEIF normalization has a timeout, and upload diagnostics show selected file type/size/stage once the app receives a file.
+- Confirmed working: computer browser upload and iPhone camera capture from Breadcrumbs.
+- Still unresolved: iPhone existing-library selection can stall in the native Photos picker before Breadcrumbs receives a file, so diagnostics do not appear.
 - The old Edge Function upload attempt was removed; it is not the active upload path.
 
 ## 3. Verification Snapshot
 
-- `npm test`: 249 passed, 0 failed
+- `npm test`: 255 passed, 0 failed
 - `npm run check:syntax`: 26 files checked, 0 failures
 - `npm run lint`: passed
 - `npm run security:check`: passed
@@ -34,11 +35,13 @@ Completed across the review and follow-up cleanup:
 - The broader server-side delete/storage policy model is still an accepted waiver.
 - Cloudinary unsigned uploads are intentionally public-client uploads; keep the preset scoped to this app.
 - Real iPhone and Android device checks are still worth doing against the live GitHub Pages URL.
+- iPhone existing-library selection is a known active follow-up because the native picker can stall before the app receives a file.
 
 ## 5. Final Conclusion
 
 The review and follow-up cleanup are complete, and the Cloudinary upload path is already configured in the app.
 
 What remains outside this closeout:
-- verify a real photo upload on iPhone Safari/home-screen PWA and Android Chrome
-- continue real-device upload verification now that the inactive Edge Function draft has been removed
+- fix or route around iPhone existing-library photo selection stalling before the web page receives a file
+- test Android Chrome photo upload separately
+- remove temporary upload diagnostics after the iPhone library issue is understood

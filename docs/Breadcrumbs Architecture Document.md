@@ -78,6 +78,8 @@ Trust model:
 - Typed place names are not just labels anymore; geocoding in [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:14) can move the temporary marker.
 - Edit support exists in the current UI and backend flow through [index.html](/home/petra/Desktop/breadcrumbs/index.html:118), [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:266), and [supabase.js](/home/petra/Desktop/breadcrumbs/js/supabase.js:134).
 - New photo uploads use Cloudinary from [supabase.js](/home/petra/Desktop/breadcrumbs/js/supabase.js:96); Supabase stores the resulting structured image reference with the pin.
+- Cloudinary display prefers the returned `secureUrl` for cross-device compatibility; generated Cloudinary URLs are only a fallback.
+- Upload diagnostics report file name, MIME type, size, and stage after the file input emits a `change` event.
 - Pins are loaded after the splash button is pressed, not behind the splash.
 - Offline behavior relies on both service-worker caching and `localStorage` pin caching.
 
@@ -110,16 +112,18 @@ Those drifts were accounted for in later phase documents and supporting docs wer
 - The identity model is still name-based and trust-based. That is acceptable only for a small trusted family group.
 - The server-side delete and storage policy model remains broader than the UI wording implies. That is an accepted Phase 4 waiver, not an accidental mismatch.
 - `manifest.json` and `sw.js` are intentionally coupled to the GitHub Pages `/breadcrumbs/` path.
-- iPhone photo picking depends on these implementation choices that should not be casually reverted:
+- iPhone photo picking depends on these implementation choices that should not be casually reverted without real-device testing:
   - nested `<label>` + `<input type="file">` activation
   - a 1px visually hidden input instead of `display: none`
-  - photo normalization for HEIC/HEIF before upload where browser support allows it
+  - photo normalization for HEIC/HEIF before upload where browser support allows it, with timeout fallback
   - Cloudinary direct upload for new photos
+- Known active issue: iPhone existing-library selection can stall in the native Photos picker before Breadcrumbs receives a file; iPhone camera capture from inside Breadcrumbs works.
 - The old `supabase/functions/upload-photo` Edge Function draft was removed; it is not part of the current deployed upload flow.
 
 ## 10. Manual QA Still Worth Running
 
 - iPhone Safari: pick from library, take a camera photo, and replace a photo during edit
+- iPhone Safari: specifically verify whether existing-library selection reaches the app and shows upload diagnostics
 - iPhone home-screen PWA: repeat the same photo flows after install
 - Android Chrome: install, open, and add a photo
 - Offline reopen after a prior successful online load
