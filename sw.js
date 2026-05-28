@@ -1,4 +1,4 @@
-const CACHE_NAME = 'breadcrumbs-v10';
+const CACHE_NAME = 'breadcrumbs-v11';
 const STATIC_ASSETS = [
   '/breadcrumbs/',
   '/breadcrumbs/index.html',
@@ -35,6 +35,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   const requestUrl = new URL(event.request.url);
 
   if (requestUrl.hostname.includes('supabase.co')) {
