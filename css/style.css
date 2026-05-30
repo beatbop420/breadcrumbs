@@ -252,6 +252,18 @@ body { font-family: var(--font-sans); color: var(--color-brown); }
 }
 
 .upload-btn:hover { border-color: var(--color-sage); color: var(--color-sage); }
+/* The iPhone-gallery shortcut launcher: a solid, obvious button (not the dashed
+   file picker) so it reads as the primary way to add a gallery photo on iPhone. */
+.upload-btn--shortcut {
+  margin-top: 8px;
+  border-style: solid;
+  border-color: var(--color-sage);
+  background: var(--color-sage);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+.upload-btn--shortcut:hover { color: #fff; background: var(--color-brown-mid); border-color: var(--color-brown-mid); }
 .upload-btn--selected {
   border-color: var(--color-sage);
   color: var(--color-sage);

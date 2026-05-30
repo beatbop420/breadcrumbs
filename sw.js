@@ -1,4 +1,4 @@
-const CACHE_NAME = 'breadcrumbs-v14';
+const CACHE_NAME = 'breadcrumbs-v15';
 const STATIC_ASSETS = [
   '/breadcrumbs/',
   '/breadcrumbs/index.html',

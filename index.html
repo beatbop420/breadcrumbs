@@ -88,9 +88,17 @@
           <span id="add-photo-label">Choose a photo</span>
           <input id="add-photo" type="file" accept="image/*" class="upload-input" />
         </label>
+        <!--
+          iPhone gallery photos can't be read by the in-app picker above (Apple
+          blocks websites from reaching iCloud photos). This button runs the
+          installed "Breadcrumbs Photo" Shortcut by name; the Shortcut uploads
+          the chosen photo and reopens the app with it pre-filled via ?photo=.
+        -->
+        <a id="add-photo-shortcut" class="upload-btn upload-btn--shortcut" href="shortcuts://run-shortcut?name=Breadcrumbs%20Photo">
+          📷 Add from iPhone gallery
+        </a>
         <p id="add-photo-status" class="upload-status">No photo selected</p>
-        <p class="upload-hint">iPhone: if photo selection stalls, your photo may be in iCloud. Fix: Settings → Photos → Download and Keep Originals.</p>
-        <p class="upload-hint">Or <a class="upload-hint__link" href="https://www.icloud.com/shortcuts/3a65e3f9402f4ded-abf9173802f8c73d" target="_blank" rel="noopener noreferrer">install the Breadcrumbs Shortcut</a> to pick any iCloud photo and land back here automatically.</p>
+        <p class="upload-hint">On iPhone, "Choose a photo" works for the camera. For a photo from your gallery, tap "Add from iPhone gallery" above — it runs your Shortcut and brings the photo back here.</p>
         <div id="add-photo-preview-wrap" class="photo-preview hidden">
           <img id="add-photo-preview" class="photo-preview__image" src="" alt="Selected photo preview" />
         </div>
