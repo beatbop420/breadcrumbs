@@ -8,6 +8,10 @@ const MAP_ZOOM_SNAP = 0.1;
 const MAP_ZOOM_DELTA = 0.25;
 const MAP_WORLD_FIT_PADDING_PX = 96;
 const TILE_SIZE_PX = 256;
+// Keep the map from being dragged off into the grey void. Latitude is clamped to
+// the usable web-mercator range; viscosity 1.0 makes the edge feel solid.
+const MAP_MAX_BOUNDS = [[-85, -180], [85, 180]];
+const MAP_MAX_BOUNDS_VISCOSITY = 1.0;
 const PIN_ENTRANCE_TRANSITION = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease';
 
 let mapInstance = null;
@@ -38,6 +42,8 @@ function initMap(onMapTap) {
     zoomSnap: MAP_ZOOM_SNAP,
     zoomDelta: MAP_ZOOM_DELTA,
     worldCopyJump: true,
+    maxBounds: MAP_MAX_BOUNDS,
+    maxBoundsViscosity: MAP_MAX_BOUNDS_VISCOSITY,
   }).setView(MAP_INITIAL_CENTER, singleWorldMinZoom);
   window.L.tileLayer(TILE_URL, {
     attribution: TILE_ATTRIBUTION,
