@@ -1,4 +1,4 @@
-const CACHE_NAME = 'breadcrumbs-v11';
+const CACHE_NAME = 'breadcrumbs-v12';
 const STATIC_ASSETS = [
   '/breadcrumbs/',
   '/breadcrumbs/index.html',
@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   '/breadcrumbs/js/pinLogic.js',
   '/breadcrumbs/js/username.js',
   '/breadcrumbs/js/data.js',
+  '/breadcrumbs/js/photoProcessing.js',
   '/breadcrumbs/manifest.json',
   '/breadcrumbs/assets/pin-placeholder.svg',
   '/breadcrumbs/assets/icon.svg',
