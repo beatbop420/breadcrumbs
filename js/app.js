@@ -457,6 +457,11 @@ async function initApp() {
         document.getElementById('drop-crumb-fab').classList.remove('hidden');
         await loadAndRenderPins();
         subscribeToNewPins(handleNewRealtimePin);
+        // Arrived via the photo Shortcut (?photo=...): jump straight into the
+        // add form with the photo pre-filled, so there's no extra "Drop a Crumb" tap.
+        if (prefillPhotoUrl) {
+          openAddModal(getMapCenter());
+        }
       });
     }, { once: true });
 
