@@ -45,3 +45,12 @@ What remains outside this closeout:
 - fix or route around iPhone existing-library photo selection stalling before the web page receives a file
 - test Android Chrome photo upload separately
 - remove temporary upload diagnostics after the iPhone library issue is understood
+
+---
+
+## Update — 2026-05-30
+
+- The iPhone existing-library photo problem is **resolved** via an iOS Shortcut bridge: the Shortcut uploads the photo to Cloudinary and opens the app at `?photo=<secure_url>`, which pre-fills the form. Confirmed working end-to-end. Commit `805dd5a`.
+- Root cause of the "shortcut does nothing" symptom was **not** code — the feature was deployed correctly. The cache-first service worker still held `CACHE_NAME = breadcrumbs-v11` and kept serving the stale pre-feature `js/app.js` to phones. Bumped to `breadcrumbs-v12` (commit `de0ca31`) to force a fresh restock, and added `js/photoProcessing.js` to the precache list.
+- New standing rule: bump `CACHE_NAME` in `sw.js` on every app-code change.
+- Still open: Cloudinary cleanup, Android Chrome upload test, removal of temporary upload diagnostics.

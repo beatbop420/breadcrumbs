@@ -4,6 +4,8 @@ Breadcrumbs is a small family memory map app. It shows a world map, lets a user 
 
 New photo uploads now go directly to Cloudinary from the browser. Supabase still stores the pin data, but Cloudinary handles the image file itself.
 
+On iPhone, where the in-page Photos picker can stall, an iOS Shortcut handles photos instead: it uploads the selected photo to Cloudinary and opens the app at `?photo=<secure_url>`. The app reads that query param and pre-fills the "Drop a Crumb" form. The Shortcut install link lives in `index.html`.
+
 ## Live Site
 
 ```text
@@ -47,6 +49,8 @@ npm run audit:deps
 
 This project is deployed as a static site on GitHub Pages.
 
+> **Before every deploy that touches app code:** bump `CACHE_NAME` in `sw.js` (e.g. `breadcrumbs-v12` -> `breadcrumbs-v13`). The service worker is cache-first and only re-downloads assets when this version string changes. Skip this and phones keep serving the old cached code even after a successful push.
+
 1. Create a Cloudinary account.
 2. Create an unsigned upload preset for this project.
 3. Put the Cloudinary values into `window.BREADCRUMBS_CONFIG` in `index.html` or `js/config.local.js`.
@@ -84,7 +88,7 @@ For local testing, the same values can be provided in `js/config.local.js`.
 | `js/username.js` | Name-based identity (no auth — trust-based for family use). |
 | `js/offlineCache.js` | Caches pins to localStorage for offline viewing. |
 | `js/config.js` | Runtime config shape + defaults. |
-| `sw.js` | Service worker for offline/PWA. |
+| `sw.js` | Service worker for offline/PWA. Cache-first. **Bump `CACHE_NAME` on every code change or phones serve stale code.** |
 | `css/style.css` | All styles. |
 | `sql/` | Supabase schema + RLS policies. |
 

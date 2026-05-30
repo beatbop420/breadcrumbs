@@ -3,8 +3,11 @@
 Current live site:
 - `https://beatbop420.github.io/breadcrumbs/`
 
-Latest pushed photo-investigation code commit:
-- `5df3b52` - Simplify photo input accept list to unblock iPhone library selection
+Latest pushed commit:
+- `de0ca31` - Bump SW cache to v12 so iOS gets the photo-shortcut code (2026-05-30)
+
+Latest photo-feature commit:
+- `805dd5a` - Add iOS Shortcuts bridge for iCloud photo uploads
 
 Key supporting iPhone/photo commits already in history:
 - `5df3b52` - Simplify photo input accept list to unblock iPhone library selection
@@ -28,19 +31,28 @@ Current state:
 - The inactive `supabase/` Edge Function draft and temp CLI files were removed.
 - Computer browser photo upload works.
 - iPhone camera capture from Breadcrumbs works.
-- iPhone existing-library photo selection still stalls inside the native Photos picker before Breadcrumbs receives a file; the in-app debug text does not appear in that case.
+- iPhone existing-library photo selection is now handled by an iOS Shortcut bridge (see below). The native in-page Photos picker on iPhone could still stall before the web page received a file, so the Shortcut works around it entirely.
 
-What was last changed:
-- Cloudinary photo display now prefers Cloudinary `secureUrl`.
-- Service worker no longer intercepts non-GET upload requests.
-- HEIC/HEIF normalization has a timeout and visible diagnostics were added.
-- Picker accept values were first broadened to include HEIC/HEIF, then simplified back to `image/*` to reduce iOS picker conversion constraints; iPhone library selection still needs retesting after the latest change.
+iOS Shortcut photo bridge (WORKING as of 2026-05-30):
+- The Shortcut (install link in `index.html`) does: Select Photos -> Get First Item -> POST to Cloudinary as multipart form field `file` + `upload_preset=breadcrumbs_unsigned` -> read `secure_url` -> open `https://beatbop420.github.io/breadcrumbs/?photo=<secure_url>`.
+- On load, `js/app.js` reads the `photo` query param into `prefillPhotoUrl`, then strips it via `history.replaceState`.
+- When the add modal opens, `setAddPhotoPreviewFromUrl(prefillPhotoUrl)` (in `js/ui.js`) shows the preview and status "Photo ready (uploaded via Shortcut)".
+- On save, if no normal file was picked, the pin stores `buildCloudinaryImageReference({ secureUrl: prefillPhotoUrl })`.
+
+What was last changed (2026-05-30):
+- Bumped `CACHE_NAME` in `sw.js` from `breadcrumbs-v11` to `breadcrumbs-v12`. This was the actual cause of the "shortcut does nothing" symptom: the shortcut code was deployed, but the v11 service-worker cache (cache-first) kept serving the stale pre-feature `js/app.js` to phones. Bumping the version forces a fresh restock of all assets.
+- Added the missing `js/photoProcessing.js` to the `sw.js` precache list.
+- Shipped the real Shortcut install link in `index.html`.
+
+CRITICAL OPERATIONAL RULE:
+- Every time any app code changes, bump the `CACHE_NAME` version in `sw.js` line 1 (v12 -> v13 -> ...). The service worker is cache-first and only re-fetches assets when `CACHE_NAME` changes. Forgetting this makes phones serve stale code even after a successful push — this is exactly what caused the multi-session photo-shortcut confusion.
 
 Next likely task:
-- Investigate iPhone existing-library selection before the web page receives a `change` event.
-- Retest the current simple `accept="image/*"` library picker on iPhone Safari.
-- Consider splitting the UI into separate `Take Photo` and `Choose From Library` inputs so iOS gets clearer picker intent.
+- Wire Cloudinary cleanup so orphaned/replaced/deleted images are removed remotely.
+- Test Android Chrome photo upload and PWA installability against the live URL.
+- Consider removing the temporary in-app upload diagnostics now that the iPhone path is solved.
 
 Notes:
 - the trust-model/server-policy waiver remains accepted for trusted-family use
 - the site may take a short time to refresh after future pushes because GitHub Pages rebuilds in the background
+- after a push, phones pick up the new service-worker version on their next visit; a second visit guarantees the fresh code is active

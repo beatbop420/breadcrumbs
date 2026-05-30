@@ -82,6 +82,7 @@ Trust model:
 - Upload diagnostics report file name, MIME type, size, and stage after the file input emits a `change` event.
 - Pins are loaded after the splash button is pressed, not behind the splash.
 - Offline behavior relies on both service-worker caching and `localStorage` pin caching.
+- iPhone photos can also arrive via an iOS Shortcut that uploads to Cloudinary and opens the app at `?photo=<secure_url>`; [app.js](/home/petra/Desktop/breadcrumbs/js/app.js:428) reads that param into `prefillPhotoUrl` and [ui.js](/home/petra/Desktop/breadcrumbs/js/ui.js:227) renders it via `setAddPhotoPreviewFromUrl`.
 
 ## 7. Verification Plan Used In This Review
 
@@ -112,6 +113,7 @@ Those drifts were accounted for in later phase documents and supporting docs wer
 - The identity model is still name-based and trust-based. That is acceptable only for a small trusted family group.
 - The server-side delete and storage policy model remains broader than the UI wording implies. That is an accepted Phase 4 waiver, not an accidental mismatch.
 - `manifest.json` and `sw.js` are intentionally coupled to the GitHub Pages `/breadcrumbs/` path.
+- `sw.js` is cache-first, so `CACHE_NAME` MUST be bumped on every app-code change. If it is not, deployed phones keep serving stale cached assets even after a successful push. (This caused a multi-session false "iOS shortcut is broken" investigation that was really just a stale v11 cache; resolved by bumping to v12 on 2026-05-30.)
 - iPhone photo picking depends on these implementation choices that should not be casually reverted without real-device testing:
   - nested `<label>` + `<input type="file">` activation
   - a 1px visually hidden input instead of `display: none`

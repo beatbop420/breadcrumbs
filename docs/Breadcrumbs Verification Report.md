@@ -133,3 +133,12 @@ Blunt summary:
 - automated checks are clean
 - the edit flow is safer than it was at review start
 - the remaining risks are mostly trust-model and environment-limited verification gaps, not failing local checks
+
+---
+
+## Update — 2026-05-30
+
+- The iPhone end-to-end photo path was verified live: an iOS Shortcut uploads to Cloudinary and opens `?photo=<secure_url>`, and the app pre-fills the form with "Photo ready (uploaded via Shortcut)". Confirmed working in a Safari private tab (cache-free), which also pinpointed the bug below.
+- A successful push did not reach phones because the cache-first service worker still served the old `breadcrumbs-v11` cache. Bumped `CACHE_NAME` to `breadcrumbs-v12` and added `js/photoProcessing.js` to precache (commit `de0ca31`).
+- `node --check sw.js` passes; `npm run check:syntax` reports 26 files checked, 0 failures after the change.
+- New verification habit: after any push, confirm the live `sw.js` serves the new `CACHE_NAME` (`curl -s https://beatbop420.github.io/breadcrumbs/sw.js | grep CACHE_NAME`).

@@ -28,3 +28,11 @@
 - Local automated verification passes after the Cloudinary follow-up work.
 - Cloudinary values are already configured in `index.html` and `js/config.local.js`.
 - Remaining manual QA is focused on iPhone existing-library selection and Android Chrome upload.
+
+---
+
+## Update — 2026-05-30
+
+- iPhone existing-library selection is now solved with an iOS Shortcut bridge (Cloudinary upload -> `?photo=<secure_url>` -> form pre-fill). Feature commit `805dd5a`.
+- The symptom that looked like "the shortcut is broken" was a stale service-worker cache: `CACHE_NAME` stayed `breadcrumbs-v11` across the deploy, so phones kept the old `js/app.js`. Fixed by bumping to `breadcrumbs-v12` and adding `js/photoProcessing.js` to precache (commit `de0ca31`).
+- New rule recorded in Architecture Doc, README, and handoff: bump `CACHE_NAME` on every app-code change.
