@@ -250,7 +250,7 @@ expect('ensureAccount creates a missing account', ensuredCreatedAccount.name, 'S
 
 setClientForTesting(buildMockClient());
 const newPin = await insertPin({ place_name: 'Rome', lat: 41.9, lng: 12.5 });
-expect('insertPin succeeds without returning a row', newPin, null);
+expect('insertPin returns the inserted row', newPin.id, 'new-pin-id');
 
 setClientForTesting(buildMockClient({ insertError: 'Insert failed' }));
 let insertErr = null;

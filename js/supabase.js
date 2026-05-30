@@ -195,9 +195,11 @@ async function ensureAccount(username) {
 
 async function insertPin(pinPayload) {
   const client = getClient();
-  const { error } = await client.from('pins').insert(pinPayload);
+  // Return the inserted row so the UI can draw the pin immediately instead of
+  // waiting on the realtime push (which does not reliably arrive on mobile).
+  const { data, error } = await client.from('pins').insert(pinPayload).select().single();
   if (error) throw new Error(`[Breadcrumbs] insertPin failed: ${error.message}`);
-  return null;
+  return data;
 }
 
 async function fetchSeenPinIds(username) {

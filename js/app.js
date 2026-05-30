@@ -164,10 +164,19 @@ async function handlePinSubmit(cleanData, tempMarker) {
 
     submitStage = 'insert';
     const payload = buildPinInsertPayload(cleanData, uploadedImagePath, currentUsername);
-    await insertPin(payload);
+    const insertedPin = await insertPin(payload);
     removeTemporaryMarker(tempMarker);
     hideAddModal();
     showToast('Bread successfully deployed.', 'success');
+    // Draw the new pin right away. Realtime would normally do this, but its push
+    // is unreliable on mobile, so render locally and let the realtime handler
+    // dedupe via pinMarkers.has(id).
+    if (insertedPin && !pinMarkers.has(insertedPin.id)) {
+      const marker = renderPinMarker(insertedPin, seenPinSet, handlePinClick);
+      pinMarkers.set(insertedPin.id, marker);
+      upsertCachedPin(insertedPin);
+      animatePinEntrance(marker);
+    }
     console.info('[Breadcrumbs] Pin inserted successfully');
   } catch (err) {
     console.error('[Breadcrumbs] handlePinSubmit failed:', err);
